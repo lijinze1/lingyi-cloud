@@ -1,0 +1,14 @@
+{
+  "name": "lingyi-frontend-workspace",
+  "private": true,
+  "workspaces": [
+    "apps/web-c",
+    "apps/web-b"
+  ],
+  "scripts": {
+    "dev:c": "npm run dev -w apps/web-c",
+    "dev:b": "npm run dev -w apps/web-b",
+    "build:c": "npm run build -w apps/web-c",
+    "build:b": "npm run build -w apps/web-b"
+  }
+}

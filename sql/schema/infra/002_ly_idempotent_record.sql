@@ -1,0 +1,15 @@
+﻿CREATE TABLE IF NOT EXISTS `ly_idempotent_record` (
+  `id` BIGINT NOT NULL COMMENT '幂等记录ID',
+  `idempotent_key` VARCHAR(128) NOT NULL COMMENT '幂等键',
+  `biz_type` VARCHAR(64) NOT NULL COMMENT '业务类型',
+  `biz_id` VARCHAR(64) DEFAULT NULL COMMENT '业务标识',
+  `status` TINYINT NOT NULL DEFAULT 1 COMMENT '状态:1有效,0失效',
+  `expire_at` DATETIME DEFAULT NULL COMMENT '过期时间',
+  `created_by` BIGINT DEFAULT NULL COMMENT '创建人ID',
+  `updated_by` BIGINT DEFAULT NULL COMMENT '更新人ID',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `is_deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '逻辑删除:0否,1是',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_ly_idempotent_key` (`idempotent_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='接口幂等记录表';

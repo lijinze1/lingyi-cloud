@@ -1,0 +1,19 @@
+﻿CREATE TABLE IF NOT EXISTS `ly_order_item` (
+  `id` BIGINT NOT NULL COMMENT '订单明细ID',
+  `order_id` BIGINT NOT NULL COMMENT '订单ID',
+  `order_no` VARCHAR(64) NOT NULL COMMENT '订单号',
+  `spu_id` BIGINT NOT NULL COMMENT 'SPU ID',
+  `sku_id` BIGINT NOT NULL COMMENT 'SKU ID',
+  `sku_title` VARCHAR(128) NOT NULL COMMENT 'SKU标题',
+  `sku_attrs_json` JSON DEFAULT NULL COMMENT 'SKU属性快照',
+  `price` DECIMAL(10,2) NOT NULL COMMENT '成交单价',
+  `quantity` INT NOT NULL COMMENT '购买数量',
+  `amount` DECIMAL(12,2) NOT NULL COMMENT '明细总价',
+  `created_by` BIGINT DEFAULT NULL COMMENT '创建人ID',
+  `updated_by` BIGINT DEFAULT NULL COMMENT '更新人ID',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `is_deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '逻辑删除:0否,1是',
+  PRIMARY KEY (`id`),
+  KEY `idx_ly_order_item_order` (`order_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='订单明细表';

@@ -1,0 +1,57 @@
+server:
+  port: ${SERVER_PORT:18081}
+
+spring:
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:lingyi}?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+    username: ${MYSQL_USERNAME:root}
+    password: ${MYSQL_PASSWORD:123456}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jackson:
+    time-zone: Asia/Shanghai
+
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      logic-delete-field: isDeleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+springdoc:
+  packages-to-scan: com.lingyi.service.user.controller
+
+lingyi:
+  captcha:
+    expire-seconds: ${CAPTCHA_EXPIRE_SECONDS:180}
+    width: ${CAPTCHA_WIDTH:120}
+    height: ${CAPTCHA_HEIGHT:40}
+    length: ${CAPTCHA_LENGTH:4}
+  sms:
+    fixed-code: ${SMS_FIXED_CODE:123456}
+    expire-seconds: ${SMS_EXPIRE_SECONDS:300}
+    cooldown-seconds: ${SMS_COOLDOWN_SECONDS:60}
+  bootstrap:
+    enabled: ${LINGYI_BOOTSTRAP_ENABLED:true}
+    admin:
+      username: ${LINGYI_BOOTSTRAP_ADMIN_USERNAME:admin}
+      password: ${LINGYI_BOOTSTRAP_ADMIN_PASSWORD:123456}
+      nickname: ${LINGYI_BOOTSTRAP_ADMIN_NICKNAME:后台管理员}
+    user:
+      username: ${LINGYI_BOOTSTRAP_USER_USERNAME:13800000000}
+      password: ${LINGYI_BOOTSTRAP_USER_PASSWORD:123456}
+      nickname: ${LINGYI_BOOTSTRAP_USER_NICKNAME:体验用户}
+    rbac:
+      seed: ${LINGYI_BOOTSTRAP_RBAC_SEED:true}

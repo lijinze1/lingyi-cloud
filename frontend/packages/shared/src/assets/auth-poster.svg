@@ -1,0 +1,66 @@
+<svg width="1600" height="1000" viewBox="0 0 1600 1000" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="sky" x1="800" y1="0" x2="800" y2="1000" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#233250"/>
+      <stop offset="0.42" stop-color="#5A5170"/>
+      <stop offset="0.72" stop-color="#C4794A"/>
+      <stop offset="1" stop-color="#F0D19A"/>
+    </linearGradient>
+    <radialGradient id="glowLeft" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(270 240) rotate(50) scale(280 220)">
+      <stop stop-color="#FFF2D5" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#FFF2D5" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowRight" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1250 300) rotate(30) scale(320 240)">
+      <stop stop-color="#FFD4A2" stop-opacity="0.42"/>
+      <stop offset="1" stop-color="#FFD4A2" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="mountainOne" x1="146" y1="595" x2="1382" y2="760" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#C68252"/>
+      <stop offset="1" stop-color="#A45E42"/>
+    </linearGradient>
+    <linearGradient id="mountainTwo" x1="201" y1="690" x2="1408" y2="850" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#9A5A42"/>
+      <stop offset="1" stop-color="#724436"/>
+    </linearGradient>
+    <linearGradient id="mountainThree" x1="120" y1="760" x2="1465" y2="930" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6F4A38"/>
+      <stop offset="1" stop-color="#4A312B"/>
+    </linearGradient>
+    <filter id="blurLarge" x="0" y="0" width="1600" height="1000" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="50"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="1000" fill="url(#sky)"/>
+  <rect width="1600" height="1000" fill="url(#glowLeft)"/>
+  <rect width="1600" height="1000" fill="url(#glowRight)"/>
+
+  <g opacity="0.6">
+    <circle cx="1160" cy="170" r="44" fill="#FFF7DF"/>
+    <path d="M266 154C303.5 102.5 383 91 437 134C377.5 133 320.5 152.5 266 154Z" fill="#FFF7DF" opacity="0.88"/>
+    <path d="M1332 244C1364.5 200 1432 192 1482 229C1431 229 1381 235 1332 244Z" fill="#FFF7DF" opacity="0.8"/>
+  </g>
+
+  <g opacity="0.22">
+    <path d="M733 188H857V270H939V394H857V476H733V394H651V270H733V188Z" stroke="#FFF3D7" stroke-width="18" stroke-linejoin="round"/>
+  </g>
+
+  <g opacity="0.55">
+    <path d="M1112 206C1153 170 1216 164 1264 196C1224 204 1191 224 1166 256C1142 254 1124 245 1112 206Z" fill="#E9B15A"/>
+    <circle cx="1270" cy="223" r="56" fill="#EFB760"/>
+    <circle cx="1238" cy="197" r="8" fill="#FFF0D2"/>
+    <path d="M1118 787C1197 768 1265 793 1324 854C1261 900 1193 895 1118 787Z" fill="#7DA36D"/>
+    <path d="M139 260C200 245 247 277 284 356C224 344 178 311 139 260Z" fill="#78905B"/>
+    <circle cx="221" cy="310" r="9" fill="#F8E3C1"/>
+    <circle cx="261" cy="280" r="6" fill="#F8E3C1"/>
+  </g>
+
+  <path d="M0 634C132 608 259 612 381 666C520 732 615 740 732 686C828 642 920 606 1025 620C1123 633 1210 672 1328 674C1414 676 1505 653 1600 614V1000H0V634Z" fill="url(#mountainOne)"/>
+  <path d="M0 760C136 717 248 706 356 737C461 768 549 826 650 828C760 830 846 767 956 740C1069 713 1156 733 1278 796C1374 846 1478 858 1600 824V1000H0V760Z" fill="url(#mountainTwo)"/>
+  <path d="M0 835C123 801 251 794 384 839C489 874 591 928 722 930C855 932 952 868 1080 845C1220 819 1343 846 1600 930V1000H0V835Z" fill="url(#mountainThree)"/>
+
+  <g opacity="0.12" filter="url(#blurLarge)">
+    <ellipse cx="288" cy="883" rx="220" ry="110" fill="#E8A269"/>
+    <ellipse cx="1290" cy="855" rx="250" ry="120" fill="#EFBF7A"/>
+  </g>
+</svg>

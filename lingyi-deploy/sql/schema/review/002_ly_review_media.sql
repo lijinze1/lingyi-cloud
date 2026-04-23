@@ -1,0 +1,14 @@
+﻿CREATE TABLE IF NOT EXISTS `ly_review_media` (
+  `id` BIGINT NOT NULL COMMENT '评价媒体ID',
+  `review_id` BIGINT NOT NULL COMMENT '评价ID',
+  `media_type` VARCHAR(16) NOT NULL DEFAULT 'IMAGE' COMMENT '媒体类型:IMAGE/VIDEO',
+  `media_url` VARCHAR(255) NOT NULL COMMENT '媒体地址',
+  `sort_no` INT NOT NULL DEFAULT 0 COMMENT '排序号',
+  `created_by` BIGINT DEFAULT NULL COMMENT '创建人ID',
+  `updated_by` BIGINT DEFAULT NULL COMMENT '更新人ID',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `is_deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '逻辑删除:0否,1是',
+  PRIMARY KEY (`id`),
+  KEY `idx_ly_review_media_review` (`review_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='评价媒体表';

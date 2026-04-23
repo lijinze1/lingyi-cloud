@@ -1,0 +1,34 @@
+const TOKEN_KEY = "LINGYI_AUTH_TOKEN";
+const USER_KEY = "LINGYI_AUTH_USER";
+
+export function getToken() {
+  return localStorage.getItem(TOKEN_KEY) || "";
+}
+
+export function setToken(token) {
+  localStorage.setItem(TOKEN_KEY, token);
+}
+
+export function getUser() {
+  const raw = localStorage.getItem(USER_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+export function setUser(user) {
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
+}
+
+export function clearAuth() {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(USER_KEY);
+}
+
+export function hasRole(role) {
+  const user = getUser();
+  return Array.isArray(user?.roles) && user.roles.includes(role);
+}

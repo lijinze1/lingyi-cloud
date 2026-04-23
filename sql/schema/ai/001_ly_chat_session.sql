@@ -1,0 +1,15 @@
+﻿CREATE TABLE IF NOT EXISTS `ly_chat_session` (
+  `id` BIGINT NOT NULL COMMENT '会话ID',
+  `user_id` BIGINT DEFAULT NULL COMMENT '用户ID',
+  `biz_type` VARCHAR(32) NOT NULL COMMENT '业务类型:客服/问病',
+  `biz_ref_id` BIGINT DEFAULT NULL COMMENT '业务关联ID',
+  `title` VARCHAR(128) DEFAULT NULL COMMENT '会话标题',
+  `status` TINYINT NOT NULL DEFAULT 1 COMMENT '状态:1启用,0关闭',
+  `created_by` BIGINT DEFAULT NULL COMMENT '创建人ID',
+  `updated_by` BIGINT DEFAULT NULL COMMENT '更新人ID',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `is_deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '逻辑删除:0否,1是',
+  PRIMARY KEY (`id`),
+  KEY `idx_ly_chat_session_user_ct` (`user_id`,`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AI会话表';

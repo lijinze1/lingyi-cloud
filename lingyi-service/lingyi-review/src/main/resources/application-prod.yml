@@ -1,0 +1,13 @@
+spring:
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_ADDR}
+        namespace: ${NACOS_NAMESPACE_PROD}
+        group: DEFAULT_GROUP
+      config:
+        server-addr: ${NACOS_ADDR}
+        namespace: ${NACOS_NAMESPACE_PROD}
+        group: DEFAULT_GROUP
+        file-extension: yaml
+

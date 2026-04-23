@@ -1,0 +1,20 @@
+﻿CREATE TABLE IF NOT EXISTS `ly_review` (
+  `id` BIGINT NOT NULL COMMENT '评价ID',
+  `order_id` BIGINT NOT NULL COMMENT '订单ID',
+  `order_item_id` BIGINT NOT NULL COMMENT '订单明细ID',
+  `spu_id` BIGINT NOT NULL COMMENT 'SPU ID',
+  `sku_id` BIGINT NOT NULL COMMENT 'SKU ID',
+  `user_id` BIGINT NOT NULL COMMENT '用户ID',
+  `score` TINYINT NOT NULL COMMENT '评分(1-5)',
+  `content` VARCHAR(1000) DEFAULT NULL COMMENT '评价内容',
+  `is_anonymous` TINYINT NOT NULL DEFAULT 0 COMMENT '是否匿名:1是,0否',
+  `status` TINYINT NOT NULL DEFAULT 1 COMMENT '状态:1显示,0隐藏',
+  `created_by` BIGINT DEFAULT NULL COMMENT '创建人ID',
+  `updated_by` BIGINT DEFAULT NULL COMMENT '更新人ID',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `is_deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '逻辑删除:0否,1是',
+  PRIMARY KEY (`id`),
+  KEY `idx_ly_review_spu_ct` (`spu_id`,`created_at`),
+  KEY `idx_ly_review_user` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='商品评价表';

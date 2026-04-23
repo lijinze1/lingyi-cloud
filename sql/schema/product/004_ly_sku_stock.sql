@@ -1,0 +1,15 @@
+﻿CREATE TABLE IF NOT EXISTS `ly_sku_stock` (
+  `id` BIGINT NOT NULL COMMENT '库存ID',
+  `sku_id` BIGINT NOT NULL COMMENT 'SKU ID',
+  `stock_total` INT NOT NULL DEFAULT 0 COMMENT '总库存',
+  `stock_available` INT NOT NULL DEFAULT 0 COMMENT '可用库存',
+  `stock_locked` INT NOT NULL DEFAULT 0 COMMENT '锁定库存',
+  `version` INT NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
+  `created_by` BIGINT DEFAULT NULL COMMENT '创建人ID',
+  `updated_by` BIGINT DEFAULT NULL COMMENT '更新人ID',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `is_deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '逻辑删除:0否,1是',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_ly_sku_stock_sku` (`sku_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='SKU库存表';

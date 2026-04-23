@@ -1,0 +1,19 @@
+spring:
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DATABASE:0}
+      timeout: 5s
+
+lingyi:
+  auth:
+    jwt-secret: ${JWT_SECRET}
+    issuer: ${JWT_ISSUER:lingyi-user}
+    token-expire-seconds: ${JWT_EXPIRE_SECONDS:7200}
+    session-key-prefix: ${LINGYI_SSO_SESSION_KEY_PREFIX:lingyi:sso:session:}
+  sso:
+    single-session: ${LINGYI_SSO_SINGLE_SESSION:true}
+    session-key-prefix: ${LINGYI_SSO_SESSION_KEY_PREFIX:lingyi:sso:session:}
+    user-session-key-prefix: ${LINGYI_SSO_USER_SESSION_KEY_PREFIX:lingyi:sso:user:}

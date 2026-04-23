@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lingyi.service.user.mapper.PermissionMapper">
+
+    <resultMap id="PermissionResultMap" type="com.lingyi.service.user.entity.LyPermission">
+        <id property="id" column="id" />
+        <result property="permCode" column="perm_code" />
+        <result property="permName" column="perm_name" />
+        <result property="permType" column="perm_type" />
+        <result property="path" column="path" />
+        <result property="method" column="method" />
+        <result property="status" column="status" />
+        <result property="remark" column="remark" />
+        <result property="createdBy" column="created_by" />
+        <result property="updatedBy" column="updated_by" />
+        <result property="createdAt" column="created_at" />
+        <result property="updatedAt" column="updated_at" />
+        <result property="isDeleted" column="is_deleted" />
+    </resultMap>
+
+    <select id="selectPermissionsByUserId" resultMap="PermissionResultMap">
+        SELECT DISTINCT p.*
+        FROM ly_user_role ur
+        INNER JOIN ly_role r ON r.id = ur.role_id
+        INNER JOIN ly_role_permission rp ON rp.role_id = r.id
+        INNER JOIN ly_permission p ON p.id = rp.permission_id
+        WHERE ur.user_id = #{userId}
+          AND ur.is_deleted = 0
+          AND r.is_deleted = 0
+          AND r.status = 1
+          AND rp.is_deleted = 0
+          AND p.is_deleted = 0
+          AND p.status = 1
+        ORDER BY p.created_at ASC
+    </select>
+
+    <select id="selectPermissionIdsByRoleId" resultType="java.lang.Long">
+        SELECT permission_id
+        FROM ly_role_permission
+        WHERE role_id = #{roleId}
+          AND is_deleted = 0
+        ORDER BY created_at ASC
+    </select>
+</mapper>

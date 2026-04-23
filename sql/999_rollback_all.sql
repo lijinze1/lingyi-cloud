@@ -1,0 +1,32 @@
+﻿SET FOREIGN_KEY_CHECKS = 0;
+
+DROP TABLE IF EXISTS `undo_log`;
+DROP TABLE IF EXISTS `ly_idempotent_record`;
+DROP TABLE IF EXISTS `ly_outbox_event`;
+DROP TABLE IF EXISTS `ly_kb_chunk`;
+DROP TABLE IF EXISTS `ly_kb_file`;
+DROP TABLE IF EXISTS `ly_kb`;
+DROP TABLE IF EXISTS `ly_prompt_template`;
+DROP TABLE IF EXISTS `ly_chat_message`;
+DROP TABLE IF EXISTS `ly_chat_session`;
+DROP TABLE IF EXISTS `ly_review_media`;
+DROP TABLE IF EXISTS `ly_review`;
+DROP TABLE IF EXISTS `ly_seckill_record`;
+DROP TABLE IF EXISTS `ly_activity_sku`;
+DROP TABLE IF EXISTS `ly_activity`;
+DROP TABLE IF EXISTS `ly_order_log`;
+DROP TABLE IF EXISTS `ly_order_item`;
+DROP TABLE IF EXISTS `ly_order`;
+DROP TABLE IF EXISTS `ly_cart_item`;
+DROP TABLE IF EXISTS `ly_sku_stock`;
+DROP TABLE IF EXISTS `ly_sku`;
+DROP TABLE IF EXISTS `ly_spu`;
+DROP TABLE IF EXISTS `ly_category`;
+DROP TABLE IF EXISTS `ly_role_permission`;
+DROP TABLE IF EXISTS `ly_user_role`;
+DROP TABLE IF EXISTS `ly_permission`;
+DROP TABLE IF EXISTS `ly_role`;
+DROP TABLE IF EXISTS `ly_user_auth`;
+DROP TABLE IF EXISTS `ly_user`;
+
+SET FOREIGN_KEY_CHECKS = 1;
