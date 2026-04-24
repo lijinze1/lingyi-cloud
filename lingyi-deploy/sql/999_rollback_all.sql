@@ -3,10 +3,15 @@
 DROP TABLE IF EXISTS `undo_log`;
 DROP TABLE IF EXISTS `ly_idempotent_record`;
 DROP TABLE IF EXISTS `ly_outbox_event`;
+DROP TABLE IF EXISTS `ly_chat_attachment`;
+DROP TABLE IF EXISTS `ly_chat_message_ref`;
+DROP TABLE IF EXISTS `ly_chat_session_context`;
 DROP TABLE IF EXISTS `ly_kb_chunk`;
 DROP TABLE IF EXISTS `ly_kb_file`;
 DROP TABLE IF EXISTS `ly_kb`;
-DROP TABLE IF EXISTS `ly_prompt_template`;
+DROP TABLE IF EXISTS `ly_prompt_version`;
+DROP TABLE IF EXISTS `ly_prompt`;
+DROP TABLE IF EXISTS `ly_prompt_category`;
 DROP TABLE IF EXISTS `ly_chat_message`;
 DROP TABLE IF EXISTS `ly_chat_session`;
 DROP TABLE IF EXISTS `ly_review_media`;

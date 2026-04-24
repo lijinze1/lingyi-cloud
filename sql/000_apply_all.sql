@@ -27,15 +27,21 @@ source schema/review/002_ly_review_media.sql;
 
 source schema/ai/001_ly_chat_session.sql;
 source schema/ai/002_ly_chat_message.sql;
-source schema/ai/003_ly_prompt_template.sql;
-source schema/ai/004_ly_kb.sql;
-source schema/ai/005_ly_kb_file.sql;
-source schema/ai/006_ly_kb_chunk.sql;
+source schema/ai/003_ly_prompt_category.sql;
+source schema/ai/004_ly_prompt.sql;
+source schema/ai/005_ly_prompt_version.sql;
+source schema/ai/006_ly_kb.sql;
+source schema/ai/007_ly_kb_file.sql;
+source schema/ai/008_ly_kb_chunk.sql;
+source schema/ai/009_ly_chat_session_context.sql;
+source schema/ai/010_ly_chat_message_ref.sql;
+source schema/ai/011_ly_chat_attachment.sql;
 
 source schema/infra/001_ly_outbox_event.sql;
 source schema/infra/002_ly_idempotent_record.sql;
 source schema/infra/003_undo_log.sql;
 
 source seed/001_init_admin_rbac.sql;
+source seed/002_init_ai_prompt_seed.sql;
 
 SET FOREIGN_KEY_CHECKS = 1;
