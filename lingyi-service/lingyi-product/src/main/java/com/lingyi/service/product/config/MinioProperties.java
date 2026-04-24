@@ -1,4 +1,4 @@
-﻿package com.lingyi.service.product.config;
+package com.lingyi.service.product.config;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;

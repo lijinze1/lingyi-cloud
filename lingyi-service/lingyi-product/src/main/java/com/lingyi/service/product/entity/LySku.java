@@ -1,4 +1,4 @@
-﻿package com.lingyi.service.product.entity;
+package com.lingyi.service.product.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
