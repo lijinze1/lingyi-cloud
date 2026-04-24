@@ -4,6 +4,8 @@ import LoginView from "@/views/LoginView.vue";
 import DashboardView from "@/views/DashboardView.vue";
 import UsersView from "@/views/UsersView.vue";
 import ProductsView from "@/views/ProductsView.vue";
+import PromptsView from "@/views/PromptsView.vue";
+import KnowledgeView from "@/views/KnowledgeView.vue";
 import UnauthorizedView from "@/views/UnauthorizedView.vue";
 
 const routes = [
@@ -12,7 +14,9 @@ const routes = [
   { path: "/unauthorized", component: UnauthorizedView, meta: { public: true } },
   { path: "/dashboard", component: DashboardView },
   { path: "/users", component: UsersView },
-  { path: "/products", component: ProductsView }
+  { path: "/products", component: ProductsView },
+  { path: "/prompts", component: PromptsView },
+  { path: "/knowledge", component: KnowledgeView }
 ];
 
 const router = createRouter({

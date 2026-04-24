@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS `ly_kb` (
+  `id` BIGINT NOT NULL COMMENT '知识库ID',
+  `kb_code` VARCHAR(64) NOT NULL COMMENT '知识库编码',
+  `name` VARCHAR(128) NOT NULL COMMENT '知识库名称',
+  `description` VARCHAR(255) DEFAULT NULL COMMENT '知识库描述',
+  `qdrant_collection` VARCHAR(128) NOT NULL COMMENT 'Qdrant集合名',
+  `embedding_model` VARCHAR(128) NOT NULL COMMENT 'Embedding模型',
+  `embedding_dimension` INT DEFAULT NULL COMMENT '向量维度',
+  `chunk_size` INT NOT NULL DEFAULT 500 COMMENT '切片大小',
+  `chunk_overlap` INT NOT NULL DEFAULT 50 COMMENT '切片重叠',
+  `status` TINYINT NOT NULL DEFAULT 1 COMMENT '状态:1启用,0禁用',
+  `created_by` BIGINT DEFAULT NULL COMMENT '创建人ID',
+  `updated_by` BIGINT DEFAULT NULL COMMENT '更新人ID',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `is_deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '逻辑删除:0否,1是',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_ly_kb_code` (`kb_code`),
+  UNIQUE KEY `uk_ly_kb_name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='知识库主表';

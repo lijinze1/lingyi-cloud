@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS `ly_chat_attachment` (
+  `id` BIGINT NOT NULL COMMENT '附件ID',
+  `session_id` BIGINT NOT NULL COMMENT '会话ID',
+  `message_id` BIGINT NOT NULL COMMENT '消息ID',
+  `source_type` VARCHAR(32) NOT NULL COMMENT '来源类型:image/file',
+  `bucket` VARCHAR(128) DEFAULT NULL COMMENT 'MinIO Bucket',
+  `object_key` VARCHAR(255) DEFAULT NULL COMMENT '对象Key',
+  `file_url` VARCHAR(512) NOT NULL COMMENT '附件访问地址',
+  `content_type` VARCHAR(128) DEFAULT NULL COMMENT '内容类型',
+  `file_name` VARCHAR(255) DEFAULT NULL COMMENT '原始文件名',
+  `file_size` BIGINT DEFAULT NULL COMMENT '文件大小',
+  `checksum` VARCHAR(128) DEFAULT NULL COMMENT '文件校验值',
+  `created_by` BIGINT DEFAULT NULL COMMENT '创建人ID',
+  `updated_by` BIGINT DEFAULT NULL COMMENT '更新人ID',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `is_deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '逻辑删除:0否,1是',
+  PRIMARY KEY (`id`),
+  KEY `idx_ly_chat_attachment_message` (`message_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AI消息附件表';

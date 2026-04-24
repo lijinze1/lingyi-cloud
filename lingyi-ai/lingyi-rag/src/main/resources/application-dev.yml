@@ -3,11 +3,11 @@ spring:
     nacos:
       discovery:
         server-addr: ${NACOS_ADDR}
-        namespace: ${NACOS_NAMESPACE_DEV}
+        namespace: ${NACOS_NAMESPACE_DEV:dev}
         group: DEFAULT_GROUP
       config:
         server-addr: ${NACOS_ADDR}
-        namespace: ${NACOS_NAMESPACE_DEV}
+        namespace: ${NACOS_NAMESPACE_DEV:dev}
         group: DEFAULT_GROUP
         file-extension: yaml
 

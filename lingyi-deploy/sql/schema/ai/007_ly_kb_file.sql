@@ -1,0 +1,23 @@
+CREATE TABLE IF NOT EXISTS `ly_kb_file` (
+  `id` BIGINT NOT NULL COMMENT '文件ID',
+  `kb_id` BIGINT NOT NULL COMMENT '知识库ID',
+  `file_name` VARCHAR(255) NOT NULL COMMENT '文件名称',
+  `bucket` VARCHAR(128) NOT NULL COMMENT 'MinIO Bucket',
+  `object_key` VARCHAR(255) NOT NULL COMMENT '对象Key',
+  `file_url` VARCHAR(512) NOT NULL COMMENT '文件访问地址',
+  `content_type` VARCHAR(128) DEFAULT NULL COMMENT '内容类型',
+  `etag` VARCHAR(128) DEFAULT NULL COMMENT 'ETag',
+  `checksum` VARCHAR(128) DEFAULT NULL COMMENT '文件校验值',
+  `file_type` VARCHAR(32) DEFAULT NULL COMMENT '文件类型',
+  `file_size` BIGINT DEFAULT NULL COMMENT '文件大小(字节)',
+  `parse_status` TINYINT NOT NULL DEFAULT 0 COMMENT '解析状态:0待解析,1成功,2失败',
+  `index_status` TINYINT NOT NULL DEFAULT 0 COMMENT '索引状态:0待索引,1成功,2失败',
+  `failure_reason` VARCHAR(255) DEFAULT NULL COMMENT '失败原因',
+  `created_by` BIGINT DEFAULT NULL COMMENT '创建人ID',
+  `updated_by` BIGINT DEFAULT NULL COMMENT '更新人ID',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `is_deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '逻辑删除:0否,1是',
+  PRIMARY KEY (`id`),
+  KEY `idx_ly_kb_file_kb` (`kb_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='知识库文件表';
