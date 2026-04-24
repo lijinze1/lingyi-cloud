@@ -1,4 +1,4 @@
-﻿package com.lingyi.service.product.config;
+package com.lingyi.service.product.config;
 
 import com.baomidou.mybatisplus.annotation.DbType;
 import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;

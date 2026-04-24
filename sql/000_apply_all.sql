@@ -1,4 +1,4 @@
-﻿SET NAMES utf8mb4;
+SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
 source schema/user/001_ly_user.sql;
@@ -17,6 +17,7 @@ source schema/order/001_ly_cart_item.sql;
 source schema/order/002_ly_order.sql;
 source schema/order/003_ly_order_item.sql;
 source schema/order/004_ly_order_log.sql;
+source schema/order/005_ly_payment.sql;
 
 source schema/seckill/001_ly_activity.sql;
 source schema/seckill/002_ly_activity_sku.sql;
@@ -43,5 +44,6 @@ source schema/infra/003_undo_log.sql;
 
 source seed/001_init_admin_rbac.sql;
 source seed/002_init_ai_prompt_seed.sql;
+source seed/010_init_product_drug_data.sql;
 
 SET FOREIGN_KEY_CHECKS = 1;

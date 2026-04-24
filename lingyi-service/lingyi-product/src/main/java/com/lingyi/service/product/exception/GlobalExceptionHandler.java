@@ -1,4 +1,4 @@
-﻿package com.lingyi.service.product.exception;
+package com.lingyi.service.product.exception;
 
 import com.lingyi.common.web.domain.ErrorCode;
 import com.lingyi.common.web.domain.Result;
