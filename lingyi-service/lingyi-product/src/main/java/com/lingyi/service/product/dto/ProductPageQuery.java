@@ -5,6 +5,7 @@ import lombok.Data;
 @Data
 public class ProductPageQuery {
     private String keyword;
+    private String q;
     private Long categoryId;
     private Integer status;
     private long pageNo = 1;

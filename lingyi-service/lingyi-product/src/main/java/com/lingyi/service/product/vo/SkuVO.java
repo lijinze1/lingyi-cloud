@@ -7,6 +7,8 @@ import lombok.Data;
 public class SkuVO {
     private Long id;
     private Long spuId;
+    private String spuName;
+    private String mainImage;
     private String skuCode;
     private String title;
     private String attrsJson;

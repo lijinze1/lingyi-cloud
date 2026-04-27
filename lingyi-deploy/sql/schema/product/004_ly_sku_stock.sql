@@ -1,4 +1,4 @@
-﻿CREATE TABLE IF NOT EXISTS `ly_sku_stock` (
+CREATE TABLE IF NOT EXISTS `ly_sku_stock` (
   `id` BIGINT NOT NULL COMMENT '库存ID',
   `sku_id` BIGINT NOT NULL COMMENT 'SKU ID',
   `stock_total` INT NOT NULL DEFAULT 0 COMMENT '总库存',

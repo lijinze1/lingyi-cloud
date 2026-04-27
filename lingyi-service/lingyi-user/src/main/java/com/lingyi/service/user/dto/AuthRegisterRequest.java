@@ -1,7 +1,11 @@
-﻿package com.lingyi.service.user.dto;
+package com.lingyi.service.user.dto;
+
+import lombok.Data;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+
+@Data
 
 public class AuthRegisterRequest {
 
@@ -16,27 +20,11 @@ public class AuthRegisterRequest {
     @Size(max = 64, message = "nickname length must be less than 64")
     private String nickname;
 
-    public String getUsername() {
-        return username;
-    }
+    @NotBlank(message = "captchaId is required")
+    private String captchaId;
 
-    public void setUsername(String username) {
-        this.username = username;
-    }
+    @NotBlank(message = "captchaCode is required")
+    private String captchaCode;
 
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public String getNickname() {
-        return nickname;
-    }
-
-    public void setNickname(String nickname) {
-        this.nickname = nickname;
-    }
 }
+

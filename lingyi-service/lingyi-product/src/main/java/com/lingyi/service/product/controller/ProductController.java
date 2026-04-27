@@ -38,6 +38,13 @@ public class ProductController {
         return Result.success(productService.pageProducts(query, true));
     }
 
+    @GetMapping("/spus/recommend")
+    public Result<PageVO<SpuVO>> recommend(ProductPageQuery query) {
+        query.setPageNo(Math.max(query.getPageNo(), 1));
+        query.setPageSize(Math.min(Math.max(query.getPageSize(), 1), 12));
+        return Result.success(productService.pageProducts(query, true));
+    }
+
     @GetMapping("/spus/{id}")
     public Result<ProductDetailVO> detail(@PathVariable Long id) {
         return Result.success(productService.getProductDetail(id, true));

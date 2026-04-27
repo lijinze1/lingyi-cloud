@@ -1,6 +1,8 @@
 package com.lingyi.service.cart.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.lingyi.common.web.domain.ErrorCode;
+import com.lingyi.common.web.domain.Result;
 import com.lingyi.common.web.exception.BizException;
 import com.lingyi.service.cart.client.ProductClient;
 import com.lingyi.service.cart.client.ProductSkuVO;
@@ -19,6 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class CartServiceImpl implements CartService {
+
+    private static final String SUCCESS_CODE = ErrorCode.SUCCESS.getCode();
 
     private final CartItemMapper cartItemMapper;
     private final ProductClient productClient;
@@ -45,13 +49,22 @@ public class CartServiceImpl implements CartService {
                 .eq(LyCartItem::getSkuId, request.getSkuId())
                 .last("LIMIT 1"));
         if (item == null) {
-            item = new LyCartItem();
-            item.setUserId(userId);
-            item.setSkuId(request.getSkuId());
-            item.setQuantity(request.getQuantity());
-            item.setChecked(1);
-            item.setPriceSnapshot(sku.getPrice());
-            cartItemMapper.insert(item);
+            item = cartItemMapper.selectAnyByUserIdAndSkuId(userId, request.getSkuId());
+            if (item != null) {
+                cartItemMapper.restoreDeletedItem(item.getId(), userId, request.getQuantity(), sku.getPrice());
+                item.setQuantity(request.getQuantity());
+                item.setChecked(1);
+                item.setPriceSnapshot(sku.getPrice());
+                item.setIsDeleted(0);
+            } else {
+                item = new LyCartItem();
+                item.setUserId(userId);
+                item.setSkuId(request.getSkuId());
+                item.setQuantity(request.getQuantity());
+                item.setChecked(1);
+                item.setPriceSnapshot(sku.getPrice());
+                cartItemMapper.insert(item);
+            }
         } else {
             item.setQuantity(item.getQuantity() + request.getQuantity());
             item.setChecked(1);
@@ -96,6 +109,7 @@ public class CartServiceImpl implements CartService {
         vo.setSpuId(sku.getSpuId());
         vo.setTitle(sku.getTitle());
         vo.setAttrsJson(sku.getAttrsJson());
+        vo.setMainImage(sku.getMainImage());
         vo.setPrice(sku.getPrice());
         vo.setQuantity(item.getQuantity());
         vo.setChecked(item.getChecked());
@@ -112,10 +126,27 @@ public class CartServiceImpl implements CartService {
     }
 
     private ProductSkuVO requireSku(Long skuId) {
-        ProductSkuVO sku = productClient.getSku(skuId).getData();
+        Result<ProductSkuVO> result;
+        try {
+            result = productClient.getSku(skuId);
+        } catch (RuntimeException ex) {
+            throw new BizException("C0500", "商品服务暂时不可用，请稍后重试");
+        }
+        if (result == null || !SUCCESS_CODE.equals(result.getCode())) {
+            throw new BizException("C0500", resolveMessage(result, "商品服务暂时不可用，请稍后重试"));
+        }
+        ProductSkuVO sku = result.getData();
         if (sku == null) {
             throw new BizException("C0404", "商品不存在或已下架");
         }
         return sku;
+    }
+
+    private String resolveMessage(Result<?> result, String fallback) {
+        if (result == null) {
+            return fallback;
+        }
+        String message = result.getMessage();
+        return message == null || message.isBlank() ? fallback : message;
     }
 }

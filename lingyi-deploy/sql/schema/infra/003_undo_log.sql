@@ -1,4 +1,4 @@
-﻿CREATE TABLE IF NOT EXISTS `undo_log` (
+CREATE TABLE IF NOT EXISTS `undo_log` (
   `branch_id` BIGINT NOT NULL COMMENT '分支事务ID',
   `xid` VARCHAR(128) NOT NULL COMMENT '全局事务ID',
   `context` VARCHAR(128) NOT NULL COMMENT '上下文信息',

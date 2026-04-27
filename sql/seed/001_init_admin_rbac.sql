@@ -1,4 +1,4 @@
-﻿-- 管理员与基础RBAC初始化数据
+-- 管理员与基础RBAC初始化数据
 INSERT INTO `ly_user` (`id`,`username`,`nickname`,`status`,`created_at`,`updated_at`,`is_deleted`) VALUES
 (1000000000001,'admin','系统管理员',1,NOW(),NOW(),0)
 ON DUPLICATE KEY UPDATE `updated_at`=NOW();

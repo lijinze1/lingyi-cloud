@@ -1,4 +1,4 @@
-﻿CREATE TABLE IF NOT EXISTS `ly_outbox_event` (
+CREATE TABLE IF NOT EXISTS `ly_outbox_event` (
   `id` BIGINT NOT NULL COMMENT '事件ID',
   `event_key` VARCHAR(128) NOT NULL COMMENT '事件幂等键',
   `topic` VARCHAR(128) NOT NULL COMMENT '消息主题',

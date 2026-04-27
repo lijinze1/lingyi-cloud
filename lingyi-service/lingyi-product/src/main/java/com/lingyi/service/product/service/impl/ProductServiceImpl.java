@@ -18,6 +18,7 @@ import com.lingyi.service.product.mapper.CategoryMapper;
 import com.lingyi.service.product.mapper.SkuMapper;
 import com.lingyi.service.product.mapper.SkuStockMapper;
 import com.lingyi.service.product.mapper.SpuMapper;
+import com.lingyi.service.product.service.ProductAssetService;
 import com.lingyi.service.product.service.ProductService;
 import com.lingyi.service.product.vo.CategoryVO;
 import com.lingyi.service.product.vo.PageVO;
@@ -50,6 +51,7 @@ public class ProductServiceImpl implements ProductService {
     private final SpuMapper spuMapper;
     private final SkuMapper skuMapper;
     private final SkuStockMapper skuStockMapper;
+    private final ProductAssetService productAssetService;
 
     @Override
     public List<CategoryVO> listCategories() {
@@ -81,6 +83,9 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public PageVO<SpuVO> pageProducts(ProductPageQuery query, boolean onlyOnline) {
+        if (!StringUtils.hasText(query.getKeyword()) && StringUtils.hasText(query.getQ())) {
+            query.setKeyword(query.getQ());
+        }
         long pageNo = Math.max(query.getPageNo(), 1);
         long pageSize = Math.min(Math.max(query.getPageSize(), 1), 100);
         LambdaQueryWrapper<LySpu> wrapper = new LambdaQueryWrapper<LySpu>()
@@ -90,7 +95,9 @@ public class ProductServiceImpl implements ProductService {
                 .and(StringUtils.hasText(query.getKeyword()), w -> w
                         .like(LySpu::getName, query.getKeyword())
                         .or()
-                        .like(LySpu::getSubTitle, query.getKeyword()))
+                        .like(LySpu::getSubTitle, query.getKeyword())
+                        .or()
+                        .like(LySpu::getDetail, query.getKeyword()))
                 .orderByDesc(LySpu::getCreatedAt);
         Page<LySpu> page = spuMapper.selectPage(Page.of(pageNo, pageSize), wrapper);
         List<LySpu> spus = page.getRecords();
@@ -103,6 +110,7 @@ public class ProductServiceImpl implements ProductService {
         List<SpuVO> records = spus.stream().map(spu -> {
             SpuVO vo = ProductConvert.toSpuVO(spu);
             vo.setCategoryName(Optional.ofNullable(categoryMap.get(spu.getCategoryId())).map(LyCategory::getName).orElse(null));
+            vo.setMainImage(productAssetService.resolvePublicUrl(vo.getMainImage()));
             List<LySku> skus = skuMap.getOrDefault(spu.getId(), List.of());
             vo.setMinPrice(skus.stream().map(LySku::getPrice).filter(Objects::nonNull).min(BigDecimal::compareTo).orElse(BigDecimal.ZERO));
             vo.setStockAvailable(skus.stream().map(sku -> stockMap.get(sku.getId())).filter(Objects::nonNull).mapToInt(LySkuStock::getStockAvailable).sum());
@@ -120,12 +128,13 @@ public class ProductServiceImpl implements ProductService {
         ProductDetailVO vo = ProductConvert.toDetailVO(spu);
         LyCategory category = categoryMapper.selectById(spu.getCategoryId());
         vo.setCategoryName(Optional.ofNullable(category).map(LyCategory::getName).orElse(null));
+        vo.setMainImage(productAssetService.resolvePublicUrl(vo.getMainImage()));
         List<LySku> skus = skuMapper.selectList(new LambdaQueryWrapper<LySku>()
                 .eq(LySku::getSpuId, spuId)
                 .eq(onlyOnline, LySku::getStatus, ONLINE)
                 .orderByAsc(LySku::getPrice));
         Map<Long, LySkuStock> stockMap = loadStockMap(skus.stream().map(LySku::getId).toList());
-        vo.setSkus(skus.stream().map(sku -> ProductConvert.toSkuVO(sku, stockMap.get(sku.getId()))).toList());
+        vo.setSkus(skus.stream().map(sku -> toSkuVO(sku, stockMap.get(sku.getId()), spu)).toList());
         return vo;
     }
 
@@ -169,14 +178,12 @@ public class ProductServiceImpl implements ProductService {
         if (sku == null || (onlyOnline && !Objects.equals(sku.getStatus(), ONLINE))) {
             throw new BizException("P0404", "SKU 不存在或已下架");
         }
-        if (onlyOnline) {
-            LySpu spu = spuMapper.selectById(sku.getSpuId());
-            if (spu == null || !Objects.equals(spu.getStatus(), ONLINE)) {
-                throw new BizException("P0404", "商品不存在或已下架");
-            }
+        LySpu spu = spuMapper.selectById(sku.getSpuId());
+        if (spu == null || (onlyOnline && !Objects.equals(spu.getStatus(), ONLINE))) {
+            throw new BizException("P0404", "商品不存在或已下架");
         }
         LySkuStock stock = selectStockBySkuId(skuId);
-        return ProductConvert.toSkuVO(sku, stock);
+        return toSkuVO(sku, stock, spu);
     }
 
     @Override
@@ -247,6 +254,13 @@ public class ProductServiceImpl implements ProductService {
         stockRequest.setStockTotal(Optional.ofNullable(request.getStockTotal()).orElse(0));
         stockRequest.setStockAvailable(Optional.ofNullable(request.getStockTotal()).orElse(0));
         setStock(stockRequest);
+    }
+
+    private SkuVO toSkuVO(LySku sku, LySkuStock stock, LySpu spu) {
+        SkuVO vo = ProductConvert.toSkuVO(sku, stock);
+        vo.setSpuName(spu.getName());
+        vo.setMainImage(productAssetService.resolvePublicUrl(spu.getMainImage()));
+        return vo;
     }
 
     private Map<Long, LyCategory> loadCategoryMap(List<Long> ids) {

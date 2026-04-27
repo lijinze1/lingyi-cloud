@@ -1,4 +1,4 @@
-﻿CREATE TABLE IF NOT EXISTS `ly_review` (
+CREATE TABLE IF NOT EXISTS `ly_review` (
   `id` BIGINT NOT NULL COMMENT '评价ID',
   `order_id` BIGINT NOT NULL COMMENT '订单ID',
   `order_item_id` BIGINT NOT NULL COMMENT '订单明细ID',

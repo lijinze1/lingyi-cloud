@@ -1,4 +1,4 @@
-﻿CREATE TABLE IF NOT EXISTS `ly_permission` (
+CREATE TABLE IF NOT EXISTS `ly_permission` (
   `id` BIGINT NOT NULL COMMENT '权限ID',
   `perm_code` VARCHAR(128) NOT NULL COMMENT '权限编码',
   `perm_name` VARCHAR(128) NOT NULL COMMENT '权限名称',

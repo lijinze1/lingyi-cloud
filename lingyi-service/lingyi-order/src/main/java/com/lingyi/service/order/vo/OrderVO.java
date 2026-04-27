@@ -11,6 +11,7 @@ public class OrderVO {
     private Long id;
     private String orderNo;
     private Long userId;
+    private Integer orderType;
     private Integer status;
     private Integer payStatus;
     private BigDecimal totalAmount;

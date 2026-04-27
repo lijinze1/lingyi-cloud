@@ -1,4 +1,4 @@
-﻿CREATE TABLE IF NOT EXISTS `ly_activity` (
+CREATE TABLE IF NOT EXISTS `ly_activity` (
   `id` BIGINT NOT NULL COMMENT '活动ID',
   `name` VARCHAR(128) NOT NULL COMMENT '活动名称',
   `start_time` DATETIME NOT NULL COMMENT '开始时间',

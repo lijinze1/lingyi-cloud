@@ -50,4 +50,10 @@ public class OrderController {
         orderService.cancel(userId, orderNo);
         return Result.success(null);
     }
+
+    @PostMapping("/orders/{orderNo}/refund")
+    public Result<Void> refund(@RequestHeader("X-User-Id") Long userId, @PathVariable String orderNo) {
+        orderService.refund(userId, orderNo);
+        return Result.success(null);
+    }
 }

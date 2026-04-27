@@ -1,4 +1,4 @@
-﻿CREATE TABLE IF NOT EXISTS `ly_activity_sku` (
+CREATE TABLE IF NOT EXISTS `ly_activity_sku` (
   `id` BIGINT NOT NULL COMMENT '活动商品ID',
   `activity_id` BIGINT NOT NULL COMMENT '活动ID',
   `sku_id` BIGINT NOT NULL COMMENT 'SKU ID',

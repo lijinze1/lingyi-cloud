@@ -2,12 +2,20 @@ spring:
   cloud:
     nacos:
       discovery:
-        server-addr: ${NACOS_ADDR}
-        namespace: ${NACOS_NAMESPACE_DEV}
+        server-addr: ${NACOS_ADDR:127.0.0.1:8848}
+        username: ${NACOS_USERNAME:nacos}
+        password: ${NACOS_PASSWORD:nacos}
+        namespace: ${NACOS_NAMESPACE_DEV:27119826-e1e3-481e-a1db-25eddb7f2327}
         group: DEFAULT_GROUP
       config:
-        server-addr: ${NACOS_ADDR}
-        namespace: ${NACOS_NAMESPACE_DEV}
+        server-addr: ${NACOS_ADDR:127.0.0.1:8848}
+        username: ${NACOS_USERNAME:nacos}
+        password: ${NACOS_PASSWORD:nacos}
+        namespace: ${NACOS_NAMESPACE_DEV:27119826-e1e3-481e-a1db-25eddb7f2327}
         group: DEFAULT_GROUP
         file-extension: yaml
+
+
+
+
 

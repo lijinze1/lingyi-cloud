@@ -1,4 +1,4 @@
-﻿package com.lingyi.gateway.server.util;
+package com.lingyi.gateway.server.util;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -42,10 +42,17 @@ public class JwtTokenService {
             if (Instant.now().getEpochSecond() >= exp) {
                 return null;
             }
+            if (!authProperties.getIssuer().equals(String.valueOf(payload.get("iss")))) {
+                return null;
+            }
 
             Long userId = Long.parseLong(String.valueOf(payload.get("uid")));
             String username = String.valueOf(payload.get("sub"));
-            return new UserClaims(userId, username);
+            String sessionId = String.valueOf(payload.get("sid"));
+            if (sessionId == null || sessionId.isBlank() || "null".equalsIgnoreCase(sessionId)) {
+                return null;
+            }
+            return new UserClaims(userId, username, sessionId);
         } catch (Exception ex) {
             return null;
         }
@@ -71,6 +78,6 @@ public class JwtTokenService {
         return result == 0;
     }
 
-    public record UserClaims(Long userId, String username) {
+    public record UserClaims(Long userId, String username, String sessionId) {
     }
 }

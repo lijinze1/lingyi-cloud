@@ -1,4 +1,4 @@
-﻿package com.lingyi.service.user.util;
+package com.lingyi.service.user.util;
 
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicInteger;

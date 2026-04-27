@@ -1,4 +1,4 @@
-﻿CREATE TABLE IF NOT EXISTS `ly_category` (
+CREATE TABLE IF NOT EXISTS `ly_category` (
   `id` BIGINT NOT NULL COMMENT '分类ID',
   `parent_id` BIGINT NOT NULL DEFAULT 0 COMMENT '父分类ID',
   `name` VARCHAR(64) NOT NULL COMMENT '分类名称',

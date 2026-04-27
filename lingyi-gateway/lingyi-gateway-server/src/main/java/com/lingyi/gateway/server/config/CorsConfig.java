@@ -1,6 +1,5 @@
 package com.lingyi.gateway.server.config;
 
-import com.lingyi.common.core.constant.GlobalConstants;
 import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,8 +18,8 @@ public class CorsConfig {
         config.setAllowedHeaders(List.of("*"));
         config.setExposedHeaders(List.of(
                 "Authorization",
-                GlobalConstants.USER_ID_HEADER,
-                GlobalConstants.USERNAME_HEADER
+                "X-User-Id",
+                "X-Username"
         ));
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);
@@ -30,4 +29,3 @@ public class CorsConfig {
         return new CorsWebFilter(source);
     }
 }
-

@@ -1,4 +1,4 @@
-﻿CREATE TABLE IF NOT EXISTS `ly_cart_item` (
+CREATE TABLE IF NOT EXISTS `ly_cart_item` (
   `id` BIGINT NOT NULL COMMENT '购物车项ID',
   `user_id` BIGINT NOT NULL COMMENT '用户ID',
   `sku_id` BIGINT NOT NULL COMMENT 'SKU ID',

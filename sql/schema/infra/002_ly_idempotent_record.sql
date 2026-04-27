@@ -1,4 +1,4 @@
-﻿CREATE TABLE IF NOT EXISTS `ly_idempotent_record` (
+CREATE TABLE IF NOT EXISTS `ly_idempotent_record` (
   `id` BIGINT NOT NULL COMMENT '幂等记录ID',
   `idempotent_key` VARCHAR(128) NOT NULL COMMENT '幂等键',
   `biz_type` VARCHAR(64) NOT NULL COMMENT '业务类型',

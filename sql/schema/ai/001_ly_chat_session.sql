@@ -1,4 +1,4 @@
-﻿CREATE TABLE IF NOT EXISTS `ly_chat_session` (
+CREATE TABLE IF NOT EXISTS `ly_chat_session` (
   `id` BIGINT NOT NULL COMMENT '会话ID',
   `user_id` BIGINT DEFAULT NULL COMMENT '用户ID',
   `biz_type` VARCHAR(32) NOT NULL COMMENT '业务类型:客服/问病',

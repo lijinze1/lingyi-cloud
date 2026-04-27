@@ -1,4 +1,4 @@
-﻿SET FOREIGN_KEY_CHECKS = 0;
+SET FOREIGN_KEY_CHECKS = 0;
 
 DROP TABLE IF EXISTS `undo_log`;
 DROP TABLE IF EXISTS `ly_idempotent_record`;

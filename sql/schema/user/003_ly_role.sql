@@ -1,4 +1,4 @@
-﻿CREATE TABLE IF NOT EXISTS `ly_role` (
+CREATE TABLE IF NOT EXISTS `ly_role` (
   `id` BIGINT NOT NULL COMMENT '角色ID',
   `role_code` VARCHAR(64) NOT NULL COMMENT '角色编码',
   `role_name` VARCHAR(64) NOT NULL COMMENT '角色名称',

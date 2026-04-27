@@ -1,27 +1,68 @@
-﻿<script setup>
-import productColdMedicine from "@shared/assets/product-cold-medicine.svg";
-import productPainRelief from "@shared/assets/product-pain-relief.svg";
+<script setup>
+import { computed, onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
+import { listCartItems, removeCartItem, updateCartItem } from "@shared";
 
-const cartItems = [
-  {
-    id: 1,
-    name: "感冒灵颗粒",
-    spec: "10 袋 / 盒",
-    price: 26,
-    qty: 2,
-    image: productColdMedicine
-  },
-  {
-    id: 2,
-    name: "布洛芬缓释胶囊",
-    spec: "24 粒 / 盒",
-    price: 32,
-    qty: 1,
-    image: productPainRelief
+const router = useRouter();
+const cartItems = ref([]);
+const loading = ref(false);
+const error = ref("");
+
+const checkedItems = computed(() => cartItems.value.filter((item) => Number(item.checked) === 1));
+const total = computed(() =>
+  checkedItems.value.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0), 0)
+);
+
+onMounted(fetchCart);
+
+async function fetchCart() {
+  loading.value = true;
+  error.value = "";
+  try {
+    cartItems.value = await listCartItems();
+  } catch (e) {
+    error.value = e.message || "购物车加载失败";
+  } finally {
+    loading.value = false;
   }
-];
+}
 
-const total = cartItems.reduce((sum, item) => sum + item.price * item.qty, 0);
+async function changeQuantity(item, delta) {
+  const nextQuantity = Math.max(1, Number(item.quantity) + delta);
+  try {
+    await updateCartItem(item.id, { quantity: nextQuantity, checked: item.checked });
+    item.quantity = nextQuantity;
+  } catch (e) {
+    error.value = e.message || "更新数量失败";
+  }
+}
+
+async function toggleChecked(item) {
+  const nextChecked = Number(item.checked) === 1 ? 0 : 1;
+  try {
+    await updateCartItem(item.id, { quantity: item.quantity, checked: nextChecked });
+    item.checked = nextChecked;
+  } catch (e) {
+    error.value = e.message || "更新勾选状态失败";
+  }
+}
+
+async function handleRemove(item) {
+  try {
+    await removeCartItem(item.id);
+    cartItems.value = cartItems.value.filter((current) => current.id !== item.id);
+  } catch (e) {
+    error.value = e.message || "移除商品失败";
+  }
+}
+
+function goCheckout() {
+  if (!checkedItems.value.length) {
+    error.value = "请先勾选要结算的商品";
+    return;
+  }
+  router.push("/checkout?fromCart=1");
+}
 </script>
 
 <template>
@@ -29,7 +70,7 @@ const total = cartItems.reduce((sum, item) => sum + item.price * item.qty, 0);
     <div class="cart-head">
       <div>
         <p>购物车</p>
-        <h1>待结算药品</h1>
+        <h1>待结算商品</h1>
       </div>
       <span>{{ cartItems.length }} 件商品</span>
     </div>
@@ -37,29 +78,47 @@ const total = cartItems.reduce((sum, item) => sum + item.price * item.qty, 0);
     <div class="cart-layout">
       <section class="cart-list">
         <article v-for="item in cartItems" :key="item.id" class="cart-item">
+          <label class="cart-check">
+            <input type="checkbox" :checked="Number(item.checked) === 1" @change="toggleChecked(item)" />
+          </label>
+
           <div class="cart-item-image-shell">
-            <img :src="item.image" :alt="item.name" class="cart-item-image" />
+            <img :src="item.mainImage" :alt="item.title" class="cart-item-image" />
           </div>
 
           <div class="cart-item-copy">
-            <strong>{{ item.name }}</strong>
-            <span>{{ item.spec }}</span>
+            <strong>{{ item.title }}</strong>
+            <span>{{ item.attrsJson || "默认规格" }}</span>
+            <small>库存 {{ item.stockAvailable || 0 }}</small>
+          </div>
+
+          <div class="cart-item-stepper">
+            <button type="button" @click="changeQuantity(item, -1)">-</button>
+            <span>{{ item.quantity }}</span>
+            <button type="button" @click="changeQuantity(item, 1)">+</button>
           </div>
 
           <div class="cart-item-meta">
-            <span>数量 x{{ item.qty }}</span>
-            <b>¥{{ item.price * item.qty }}</b>
+            <span>单价 ￥{{ Number(item.price || 0).toFixed(2) }}</span>
+            <b>￥{{ (Number(item.price || 0) * Number(item.quantity || 0)).toFixed(2) }}</b>
+            <button type="button" class="cart-remove" @click="handleRemove(item)">删除</button>
           </div>
         </article>
+
+        <p v-if="!cartItems.length && !loading" class="ly-muted">购物车还是空的，先去挑几款常备药吧。</p>
       </section>
 
       <aside class="cart-summary">
-        <small>结算金额</small>
-        <strong>¥{{ total }}</strong>
-        <button type="button">去结算</button>
+        <small>本次结算</small>
+        <strong>￥{{ total.toFixed(2) }}</strong>
+        <span>已选 {{ checkedItems.length }} 件商品</span>
+        <button type="button" @click="goCheckout">去确认订单</button>
+        <p class="cart-tip">下一步会进入确认订单页，提交后订单会出现在个人中心的待付款列表。</p>
       </aside>
     </div>
   </section>
+
+  <p v-if="error" class="ly-error">{{ error }}</p>
 </template>
 
 <style scoped>
@@ -80,9 +139,12 @@ const total = cartItems.reduce((sum, item) => sum + item.price * item.qty, 0);
 
 .cart-head p,
 .cart-item-copy span,
+.cart-item-copy small,
 .cart-item-meta span,
 .cart-summary small,
-.cart-head span {
+.cart-summary span,
+.cart-head span,
+.cart-tip {
   margin: 0 0 8px;
   color: rgba(36, 25, 18, 0.58);
 }
@@ -95,7 +157,7 @@ const total = cartItems.reduce((sum, item) => sum + item.price * item.qty, 0);
 
 .cart-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
+  grid-template-columns: minmax(0, 1fr) 320px;
   gap: 18px;
 }
 
@@ -114,9 +176,14 @@ const total = cartItems.reduce((sum, item) => sum + item.price * item.qty, 0);
 
 .cart-item {
   display: grid;
-  grid-template-columns: 120px minmax(0, 1fr) 120px;
+  grid-template-columns: 36px 120px minmax(0, 1fr) 120px 140px;
   gap: 14px;
   align-items: center;
+}
+
+.cart-check input {
+  width: 18px;
+  height: 18px;
 }
 
 .cart-item-image-shell {
@@ -144,6 +211,27 @@ const total = cartItems.reduce((sum, item) => sum + item.price * item.qty, 0);
   margin-bottom: 8px;
 }
 
+.cart-item-stepper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cart-item-stepper button,
+.cart-remove,
+.cart-summary button {
+  min-height: 42px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ff6d4d, #ff8d57);
+  color: #fff9f4;
+  cursor: pointer;
+}
+
+.cart-item-stepper button {
+  min-width: 42px;
+}
+
 .cart-item-meta {
   text-align: right;
 }
@@ -152,6 +240,12 @@ const total = cartItems.reduce((sum, item) => sum + item.price * item.qty, 0);
   display: block;
   font-size: 24px;
   color: #241912;
+}
+
+.cart-remove {
+  margin-top: 8px;
+  min-height: 34px;
+  padding: 0 12px;
 }
 
 .cart-summary {
@@ -166,21 +260,12 @@ const total = cartItems.reduce((sum, item) => sum + item.price * item.qty, 0);
 
 .cart-summary button {
   min-height: 46px;
-  border: 0;
-  border-radius: 999px;
-  background: linear-gradient(135deg, #ff6d4d, #ff8d57);
-  color: #fff9f4;
-  cursor: pointer;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 960px) {
   .cart-layout,
   .cart-item {
     grid-template-columns: 1fr;
-  }
-
-  .cart-item-meta {
-    text-align: left;
   }
 }
 </style>

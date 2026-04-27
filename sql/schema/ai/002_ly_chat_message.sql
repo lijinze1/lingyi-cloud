@@ -1,4 +1,4 @@
-﻿CREATE TABLE IF NOT EXISTS `ly_chat_message` (
+CREATE TABLE IF NOT EXISTS `ly_chat_message` (
   `id` BIGINT NOT NULL COMMENT '消息ID',
   `session_id` BIGINT NOT NULL COMMENT '会话ID',
   `role` VARCHAR(16) NOT NULL COMMENT '角色:user/assistant/system',

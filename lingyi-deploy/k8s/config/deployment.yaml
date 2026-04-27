@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lingyi-config
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lingyi-config
+  template:
+    metadata:
+      labels:
+        app: lingyi-config
+    spec:
+      containers:
+        - name: config
+          image: lingyi/config:latest
+          ports:
+            - containerPort: 18110
+

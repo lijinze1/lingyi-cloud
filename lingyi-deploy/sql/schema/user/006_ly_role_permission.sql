@@ -1,4 +1,4 @@
-﻿CREATE TABLE IF NOT EXISTS `ly_role_permission` (
+CREATE TABLE IF NOT EXISTS `ly_role_permission` (
   `id` BIGINT NOT NULL COMMENT '角色权限关系ID',
   `role_id` BIGINT NOT NULL COMMENT '角色ID',
   `permission_id` BIGINT NOT NULL COMMENT '权限ID',

@@ -1,4 +1,4 @@
-﻿package com.lingyi.service.user.util;
+package com.lingyi.service.user.util;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -26,14 +26,16 @@ public class JwtTokenService {
         this.authProperties = authProperties;
     }
 
-    public TokenData generateToken(Long userId, String username) {
+    public TokenData generateToken(Long userId, String username, String sessionId) {
         Instant now = Instant.now();
         Instant expiresAt = now.plusSeconds(authProperties.getTokenExpireSeconds());
 
         Map<String, Object> header = Map.of("alg", "HS256", "typ", "JWT");
         Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("iss", authProperties.getIssuer());
         payload.put("sub", username);
         payload.put("uid", userId);
+        payload.put("sid", sessionId);
         payload.put("iat", now.getEpochSecond());
         payload.put("exp", expiresAt.getEpochSecond());
 
@@ -60,15 +62,18 @@ public class JwtTokenService {
             String payloadJson = new String(Base64.getUrlDecoder().decode(parts[1]), StandardCharsets.UTF_8);
             Map<String, Object> payload = objectMapper.readValue(payloadJson, new TypeReference<>() {
             });
-
+            if (!authProperties.getIssuer().equals(String.valueOf(payload.get("iss")))) {
+                throw new BizException(ErrorCode.UNAUTHORIZED);
+            }
             long exp = Long.parseLong(String.valueOf(payload.get("exp")));
             if (Instant.now().getEpochSecond() >= exp) {
                 throw new BizException(ErrorCode.UNAUTHORIZED);
             }
-
-            Long userId = Long.parseLong(String.valueOf(payload.get("uid")));
-            String username = String.valueOf(payload.get("sub"));
-            return new UserClaims(userId, username);
+            return new UserClaims(
+                    Long.parseLong(String.valueOf(payload.get("uid"))),
+                    String.valueOf(payload.get("sub")),
+                    String.valueOf(payload.get("sid"))
+            );
         } catch (BizException ex) {
             throw ex;
         } catch (Exception ex) {
@@ -81,7 +86,7 @@ public class JwtTokenService {
             String json = objectMapper.writeValueAsString(value);
             return Base64.getUrlEncoder().withoutPadding().encodeToString(json.getBytes(StandardCharsets.UTF_8));
         } catch (JsonProcessingException ex) {
-            throw new BizException(ErrorCode.INTERNAL_ERROR.getCode(), "Token serialization failed");
+            throw new BizException(ErrorCode.INTERNAL_ERROR);
         }
     }
 
@@ -92,7 +97,7 @@ public class JwtTokenService {
             mac.init(key);
             return Base64.getUrlEncoder().withoutPadding().encodeToString(mac.doFinal(data.getBytes(StandardCharsets.UTF_8)));
         } catch (Exception ex) {
-            throw new BizException(ErrorCode.INTERNAL_ERROR.getCode(), "Token signing failed");
+            throw new BizException(ErrorCode.INTERNAL_ERROR);
         }
     }
 
@@ -112,6 +117,6 @@ public class JwtTokenService {
     public record TokenData(String token, Instant expiresAt) {
     }
 
-    public record UserClaims(Long userId, String username) {
+    public record UserClaims(Long userId, String username, String sessionId) {
     }
 }

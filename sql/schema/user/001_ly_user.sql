@@ -1,4 +1,4 @@
-﻿CREATE TABLE IF NOT EXISTS `ly_user` (
+CREATE TABLE IF NOT EXISTS `ly_user` (
   `id` BIGINT NOT NULL COMMENT '用户ID',
   `username` VARCHAR(64) NOT NULL COMMENT '用户名',
   `nickname` VARCHAR(64) DEFAULT NULL COMMENT '昵称',

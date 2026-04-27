@@ -1,14 +1,13 @@
-﻿package com.lingyi.service.user.config;
+package com.lingyi.service.user.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 
-@Component
 @ConfigurationProperties(prefix = "lingyi.auth")
 public class AuthProperties {
 
-    private String jwtSecret = "lingyi-default-change-me";
+    private String jwtSecret = "lingyi-dev-secret-please-change";
     private long tokenExpireSeconds = 7200;
+    private String issuer = "lingyi-user";
 
     public String getJwtSecret() {
         return jwtSecret;
@@ -24,5 +23,13 @@ public class AuthProperties {
 
     public void setTokenExpireSeconds(long tokenExpireSeconds) {
         this.tokenExpireSeconds = tokenExpireSeconds;
+    }
+
+    public String getIssuer() {
+        return issuer;
+    }
+
+    public void setIssuer(String issuer) {
+        this.issuer = issuer;
     }
 }

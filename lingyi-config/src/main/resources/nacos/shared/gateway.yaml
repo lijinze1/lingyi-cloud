@@ -1,0 +1,6 @@
+spring:
+  cloud:
+    gateway:
+      default-filters:
+        - AddResponseHeader=X-Platform, Lingyi-Cloud
+

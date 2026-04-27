@@ -1,0 +1,41 @@
+﻿server:
+  port: 18112
+
+spring:
+  application:
+    name: lingyi-notification
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  config:
+    import:
+      - optional:nacos:${spring.application.name}-${spring.profiles.active}.yaml
+      - optional:nacos:common-${spring.profiles.active}.yaml
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_ADDR:127.0.0.1:8848}
+        username: ${NACOS_USERNAME:nacos}
+        password: ${NACOS_PASSWORD:nacos}
+        namespace: ${NACOS_NAMESPACE:${NACOS_NAMESPACE_DEV:27119826-e1e3-481e-a1db-25eddb7f2327}}
+      config:
+        server-addr: ${NACOS_ADDR:127.0.0.1:8848}
+        username: ${NACOS_USERNAME:nacos}
+        password: ${NACOS_PASSWORD:nacos}
+        namespace: ${NACOS_NAMESPACE:${NACOS_NAMESPACE_DEV:27119826-e1e3-481e-a1db-25eddb7f2327}}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+springdoc:
+  group-configs:
+    - group: lingyi-notification
+      paths-to-match: /api/notification/**
+
+

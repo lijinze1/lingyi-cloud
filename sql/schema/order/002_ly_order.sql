@@ -1,4 +1,4 @@
-﻿CREATE TABLE IF NOT EXISTS `ly_order` (
+CREATE TABLE IF NOT EXISTS `ly_order` (
   `id` BIGINT NOT NULL COMMENT '订单ID',
   `order_no` VARCHAR(64) NOT NULL COMMENT '订单号',
   `user_id` BIGINT NOT NULL COMMENT '用户ID',

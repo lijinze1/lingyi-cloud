@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lingyi-gateway-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lingyi-gateway-server
+  template:
+    metadata:
+      labels:
+        app: lingyi-gateway-server
+    spec:
+      containers:
+        - name: gateway
+          image: lingyi/gateway:latest
+          ports:
+            - containerPort: 18080
+

@@ -1,4 +1,4 @@
-﻿CREATE TABLE IF NOT EXISTS `ly_review_media` (
+CREATE TABLE IF NOT EXISTS `ly_review_media` (
   `id` BIGINT NOT NULL COMMENT '评价媒体ID',
   `review_id` BIGINT NOT NULL COMMENT '评价ID',
   `media_type` VARCHAR(16) NOT NULL DEFAULT 'IMAGE' COMMENT '媒体类型:IMAGE/VIDEO',

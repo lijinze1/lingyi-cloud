@@ -1,0 +1,9 @@
+common:
+  response:
+    trace-enabled: true
+  security:
+    ignore-paths:
+      - /actuator/**
+      - /v3/api-docs/**
+      - /swagger-ui/**
+

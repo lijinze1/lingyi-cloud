@@ -1,4 +1,4 @@
-﻿CREATE TABLE IF NOT EXISTS `ly_seckill_record` (
+CREATE TABLE IF NOT EXISTS `ly_seckill_record` (
   `id` BIGINT NOT NULL COMMENT '秒杀记录ID',
   `activity_id` BIGINT NOT NULL COMMENT '活动ID',
   `sku_id` BIGINT NOT NULL COMMENT 'SKU ID',

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800">
+  <rect width="800" height="800" rx="80" fill="#fff8f2"/>
+  <rect x="120" y="190" width="210" height="430" rx="54" fill="#f7c7a5"/>
+  <rect x="148" y="235" width="154" height="120" rx="24" fill="#ffffff"/>
+  <rect x="148" y="390" width="154" height="24" rx="12" fill="#fbe5d5"/>
+  <rect x="410" y="250" width="220" height="280" rx="40" fill="#e0f0e5"/>
+  <circle cx="595" cy="205" r="74" fill="#ffe1cf"/>
+  <circle cx="520" cy="190" r="44" fill="#fff0e4"/>
+  <text x="112" y="670" fill="#734d39" font-size="54" font-family="Microsoft YaHei">止咳化痰</text>
+</svg>

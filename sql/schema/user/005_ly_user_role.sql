@@ -1,4 +1,4 @@
-﻿CREATE TABLE IF NOT EXISTS `ly_user_role` (
+CREATE TABLE IF NOT EXISTS `ly_user_role` (
   `id` BIGINT NOT NULL COMMENT '用户角色关系ID',
   `user_id` BIGINT NOT NULL COMMENT '用户ID',
   `role_id` BIGINT NOT NULL COMMENT '角色ID',
