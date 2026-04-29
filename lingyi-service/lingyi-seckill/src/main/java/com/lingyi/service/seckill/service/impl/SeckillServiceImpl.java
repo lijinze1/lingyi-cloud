@@ -17,6 +17,8 @@ import com.lingyi.service.seckill.mq.SeckillOrderMessage;
 import com.lingyi.service.seckill.service.SeckillService;
 import com.lingyi.service.seckill.vo.SeckillActivityVO;
 import com.lingyi.service.seckill.vo.SeckillAttemptVO;
+import com.lingyi.service.seckill.vo.SeckillDetailVO;
+import com.lingyi.service.seckill.vo.LinkedOrderVO;
 import com.lingyi.service.seckill.vo.SeckillOrderCreateVO;
 import com.lingyi.service.seckill.vo.SeckillRecordVO;
 import com.lingyi.service.seckill.vo.SeckillSkuVO;
@@ -54,6 +56,9 @@ public class SeckillServiceImpl implements SeckillService {
     private static final int RECORD_FAILED = 2;
     private static final int RECORD_PAID = 3;
     private static final int RECORD_CANCELLED = 4;
+    private static final int ORDER_WAIT_PAY = 10;
+    private static final int ORDER_PAID = 20;
+    private static final int ORDER_CANCELLED = 50;
     private static final int BUY_QUANTITY = 1;
 
     private final ActivityMapper activityMapper;
@@ -104,19 +109,7 @@ public class SeckillServiceImpl implements SeckillService {
                 if (sku == null) {
                     continue;
                 }
-                SeckillSkuVO skuVO = new SeckillSkuVO();
-                skuVO.setActivitySkuId(activitySku.getId());
-                skuVO.setActivityId(activity.getId());
-                skuVO.setSpuId(sku.getSpuId());
-                skuVO.setSkuId(activitySku.getSkuId());
-                skuVO.setSpuName(sku.getSpuName());
-                skuVO.setSkuTitle(StringUtils.hasText(sku.getTitle()) ? sku.getTitle() : sku.getSpuName());
-                skuVO.setMainImage(sku.getMainImage());
-                skuVO.setSeckillPrice(activitySku.getSeckillPrice());
-                skuVO.setOriginPrice(sku.getPrice());
-                skuVO.setStockAvailable(resolveCurrentStock(activitySku));
-                skuVO.setLimitPerUser(activitySku.getLimitPerUser());
-                activityVO.getSkus().add(skuVO);
+                activityVO.getSkus().add(toSkuVO(activity, activitySku, sku));
             }
 
             if (!activityVO.getSkus().isEmpty()) {
@@ -124,6 +117,38 @@ public class SeckillServiceImpl implements SeckillService {
             }
         }
         return result;
+    }
+
+    @Override
+    public SeckillDetailVO getDetail(Long activityId, Long activitySkuId) {
+        LyActivity activity = requireActivity(activityId);
+        LyActivitySku activitySku = requireActivitySkuByActivitySkuId(activityId, activitySkuId);
+        ProductSkuVO sku = loadProductSku(activitySku.getSkuId());
+        if (sku == null) {
+            throw new BizException("S0404", "秒杀商品不存在或已下架");
+        }
+        return toDetailVO(activity, activitySku, sku);
+    }
+
+    @Override
+    public SeckillRecordVO getCurrentRecord(Long userId, Long activityId, Long activitySkuId) {
+        LyActivity activity = requireActivity(activityId);
+        LyActivitySku activitySku = requireActivitySkuByActivitySkuId(activityId, activitySkuId);
+        LySeckillRecord record = findRecord(activity.getId(), activitySku.getSkuId(), userId);
+        if (record == null) {
+            return null;
+        }
+        record = reconcileLinkedOrderState(record, activitySku);
+        refreshTimedOutPendingRecord(record);
+        if (shouldRecoverPendingRecord(record)) {
+            if (isAsyncMode()) {
+                dispatchOrderCreation(record.getId());
+            } else {
+                processOrderMessage(buildOrderMessage(record.getId()));
+            }
+            record = seckillRecordMapper.selectById(record.getId());
+        }
+        return record == null ? null : toRecordVO(record);
     }
 
     @Override
@@ -135,6 +160,7 @@ public class SeckillServiceImpl implements SeckillService {
 
         LySeckillRecord existing = findRecord(activityId, activitySku.getSkuId(), userId);
         if (existing != null) {
+            existing = reconcileLinkedOrderState(existing, activitySku);
             refreshTimedOutPendingRecord(existing);
             if (shouldRecoverPendingRecord(existing)) {
                 processOrderMessage(buildOrderMessage(existing.getId()));
@@ -143,13 +169,18 @@ public class SeckillServiceImpl implements SeckillService {
             if (!canRetry(existing.getStatus())) {
                 return buildAttempt(existing.getId(), existing.getStatus(), buildStatusText(existing.getStatus()));
             }
+            clearUserAttemptMark(activitySkuId, userId);
         }
 
-        Long luaResult = stringRedisTemplate.execute(
-                attemptScript,
-                List.of(stockKey(activitySkuId), userKey(activitySkuId, userId)),
-                String.valueOf(expireSeconds(activity.getEndTime()))
-        );
+        Long luaResult = executeAttemptScript(activitySkuId, userId, activity.getEndTime());
+
+        if (luaResult != null && luaResult == 2L) {
+            LySeckillRecord latestRecord = findRecord(activityId, activitySku.getSkuId(), userId);
+            if (latestRecord == null || canRetry(latestRecord.getStatus())) {
+                clearUserAttemptMark(activitySkuId, userId);
+                luaResult = executeAttemptScript(activitySkuId, userId, activity.getEndTime());
+            }
+        }
 
         if (luaResult == null) {
             throw new BizException("S0500", "秒杀系统繁忙，请稍后重试");
@@ -163,13 +194,19 @@ public class SeckillServiceImpl implements SeckillService {
 
         LySeckillRecord record = existing;
         if (record == null) {
-            record = new LySeckillRecord();
-            record.setActivityId(activityId);
-            record.setSkuId(activitySku.getSkuId());
-            record.setUserId(userId);
-            record.setStatus(RECORD_PENDING);
-            record.setCreatedBy(userId);
-            record.setUpdatedBy(userId);
+            LySeckillRecord deletedRecord = seckillRecordMapper.selectAnyByActivitySkuUser(activityId, activitySku.getSkuId(), userId);
+            if (deletedRecord != null && Objects.equals(deletedRecord.getIsDeleted(), 1)) {
+                seckillRecordMapper.restoreDeletedRecord(deletedRecord.getId(), userId, RECORD_PENDING);
+                record = seckillRecordMapper.selectById(deletedRecord.getId());
+            } else {
+                record = new LySeckillRecord();
+                record.setActivityId(activityId);
+                record.setSkuId(activitySku.getSkuId());
+                record.setUserId(userId);
+                record.setStatus(RECORD_PENDING);
+                record.setCreatedBy(userId);
+                record.setUpdatedBy(userId);
+            }
         } else {
             record.setOrderId(null);
             record.setStatus(RECORD_PENDING);
@@ -178,7 +215,7 @@ public class SeckillServiceImpl implements SeckillService {
         try {
             if (record.getId() == null) {
                 seckillRecordMapper.insert(record);
-            } else {
+            } else if (!Objects.equals(record.getIsDeleted(), 1)) {
                 seckillRecordMapper.updateById(record);
             }
         } catch (DuplicateKeyException ex) {
@@ -212,6 +249,8 @@ public class SeckillServiceImpl implements SeckillService {
         if (record == null) {
             throw new BizException("S0404", "秒杀记录不存在");
         }
+        LyActivitySku activitySku = requireActivitySkuBySkuId(record.getActivityId(), record.getSkuId());
+        record = reconcileLinkedOrderState(record, activitySku);
         refreshTimedOutPendingRecord(record);
         if (shouldRecoverPendingRecord(record)) {
             if (isAsyncMode()) {
@@ -372,6 +411,47 @@ public class SeckillServiceImpl implements SeckillService {
         log.warn("秒杀下单失败, recordId={}, reason={}", record.getId(), reason);
     }
 
+    private LySeckillRecord reconcileLinkedOrderState(LySeckillRecord record, LyActivitySku activitySku) {
+        if (record == null || record.getOrderId() == null) {
+            return record;
+        }
+        LinkedOrderVO linkedOrder = loadLinkedOrder(record.getOrderId());
+        if (linkedOrder == null) {
+            return record;
+        }
+        if (Objects.equals(linkedOrder.getStatus(), ORDER_CANCELLED)
+                && Objects.equals(record.getStatus(), RECORD_WAIT_PAY)) {
+            activitySkuMapper.releaseLocked(activitySku.getId(), BUY_QUANTITY);
+            compensateRedis(activitySku.getId(), record.getUserId());
+            record.setOrderId(null);
+            record.setStatus(RECORD_CANCELLED);
+            record.setUpdatedBy(record.getUserId());
+            seckillRecordMapper.updateById(record);
+            return seckillRecordMapper.selectById(record.getId());
+        }
+        if (Objects.equals(linkedOrder.getStatus(), ORDER_PAID)
+                && !Objects.equals(record.getStatus(), RECORD_PAID)) {
+            record.setStatus(RECORD_PAID);
+            record.setUpdatedBy(record.getUserId());
+            seckillRecordMapper.updateById(record);
+            return seckillRecordMapper.selectById(record.getId());
+        }
+        return record;
+    }
+
+    private LinkedOrderVO loadLinkedOrder(Long orderId) {
+        try {
+            Result<LinkedOrderVO> result = orderClient.getOrderById(orderId);
+            if (result == null || !SUCCESS_CODE.equals(result.getCode())) {
+                return null;
+            }
+            return result.getData();
+        } catch (Exception ex) {
+            log.warn("查询关联订单失败, orderId={}", orderId, ex);
+            return null;
+        }
+    }
+
     private ProductSkuVO loadProductSku(Long skuId) {
         try {
             Result<ProductSkuVO> result = productClient.getSku(skuId);
@@ -459,10 +539,13 @@ public class SeckillServiceImpl implements SeckillService {
     }
 
     private boolean isPendingTimedOut(LySeckillRecord record) {
+        LocalDateTime baseTime = record == null
+                ? null
+                : (record.getUpdatedAt() != null ? record.getUpdatedAt() : record.getCreatedAt());
         return record != null
                 && Objects.equals(record.getStatus(), RECORD_PENDING)
-                && record.getCreatedAt() != null
-                && Duration.between(record.getCreatedAt(), LocalDateTime.now()).getSeconds() >= pendingTimeoutSeconds;
+                && baseTime != null
+                && Duration.between(baseTime, LocalDateTime.now()).getSeconds() >= pendingTimeoutSeconds;
     }
 
     private void releasePendingReservation(Long activitySkuId, Long userId) {
@@ -471,6 +554,10 @@ public class SeckillServiceImpl implements SeckillService {
             stringRedisTemplate.delete(userKey(activitySkuId, userId));
             stringRedisTemplate.opsForValue().increment(stockKey(activitySkuId));
         }
+    }
+
+    private void clearUserAttemptMark(Long activitySkuId, Long userId) {
+        stringRedisTemplate.delete(userKey(activitySkuId, userId));
     }
 
     private void validateActivityWindow(LyActivity activity) {
@@ -493,6 +580,42 @@ public class SeckillServiceImpl implements SeckillService {
         vo.setStatusText(buildStatusText(record.getStatus()));
         vo.setCreatedAt(record.getCreatedAt());
         return vo;
+    }
+
+    private SeckillSkuVO toSkuVO(LyActivity activity, LyActivitySku activitySku, ProductSkuVO sku) {
+        SeckillSkuVO skuVO = new SeckillSkuVO();
+        skuVO.setActivitySkuId(activitySku.getId());
+        skuVO.setActivityId(activity.getId());
+        skuVO.setSpuId(sku.getSpuId());
+        skuVO.setSkuId(activitySku.getSkuId());
+        skuVO.setSpuName(sku.getSpuName());
+        skuVO.setSkuTitle(StringUtils.hasText(sku.getTitle()) ? sku.getTitle() : sku.getSpuName());
+        skuVO.setMainImage(sku.getMainImage());
+        skuVO.setSeckillPrice(activitySku.getSeckillPrice());
+        skuVO.setOriginPrice(sku.getPrice());
+        skuVO.setStockAvailable(resolveCurrentStock(activitySku));
+        skuVO.setLimitPerUser(activitySku.getLimitPerUser());
+        return skuVO;
+    }
+
+    private SeckillDetailVO toDetailVO(LyActivity activity, LyActivitySku activitySku, ProductSkuVO sku) {
+        SeckillSkuVO skuVO = toSkuVO(activity, activitySku, sku);
+        SeckillDetailVO detailVO = new SeckillDetailVO();
+        detailVO.setActivityId(skuVO.getActivityId());
+        detailVO.setActivitySkuId(skuVO.getActivitySkuId());
+        detailVO.setSpuId(skuVO.getSpuId());
+        detailVO.setSkuId(skuVO.getSkuId());
+        detailVO.setName(StringUtils.hasText(skuVO.getSpuName()) ? skuVO.getSpuName() : activity.getName());
+        detailVO.setTitle(StringUtils.hasText(skuVO.getSkuTitle()) ? skuVO.getSkuTitle() : detailVO.getName());
+        detailVO.setImage(skuVO.getMainImage());
+        detailVO.setSeckillPrice(skuVO.getSeckillPrice());
+        detailVO.setOriginPrice(skuVO.getOriginPrice());
+        detailVO.setStockAvailable(skuVO.getStockAvailable());
+        detailVO.setLimitPerUser(skuVO.getLimitPerUser());
+        detailVO.setStartTime(activity.getStartTime());
+        detailVO.setEndTime(activity.getEndTime());
+        detailVO.setActivityStatus(activity.getStatus());
+        return detailVO;
     }
 
     private SeckillAttemptVO buildAttempt(Long recordId, Integer status, String message) {
@@ -538,6 +661,14 @@ public class SeckillServiceImpl implements SeckillService {
     private void compensateRedis(Long activitySkuId, Long userId) {
         stringRedisTemplate.opsForValue().increment(stockKey(activitySkuId));
         stringRedisTemplate.delete(userKey(activitySkuId, userId));
+    }
+
+    private Long executeAttemptScript(Long activitySkuId, Long userId, LocalDateTime endTime) {
+        return stringRedisTemplate.execute(
+                attemptScript,
+                List.of(stockKey(activitySkuId), userKey(activitySkuId, userId)),
+                String.valueOf(expireSeconds(endTime))
+        );
     }
 
     private String stockKey(Long activitySkuId) {

@@ -68,6 +68,8 @@ public class PromptCategoryAdminServiceImpl implements PromptCategoryAdminServic
 
     @Override
     public PromptCategoryVO create(PromptCategorySaveRequest request) {
+        ensureCategoryCodeAvailable(request.getCategoryCode().trim(), null);
+        requireParentCategory(request.getParentId());
         LyPromptCategory category = new LyPromptCategory();
         category.setId(idGenerator.nextId());
         category.setParentId(defaultParentId(request.getParentId()));
@@ -83,6 +85,8 @@ public class PromptCategoryAdminServiceImpl implements PromptCategoryAdminServic
     @Override
     public PromptCategoryVO update(Long categoryId, PromptCategorySaveRequest request) {
         LyPromptCategory category = requireCategory(categoryId);
+        ensureCategoryCodeAvailable(request.getCategoryCode().trim(), categoryId);
+        requireParentCategory(request.getParentId());
         category.setParentId(defaultParentId(request.getParentId()));
         category.setCategoryCode(request.getCategoryCode().trim());
         category.setCategoryName(request.getCategoryName().trim());
@@ -120,6 +124,24 @@ public class PromptCategoryAdminServiceImpl implements PromptCategoryAdminServic
 
     private Long defaultParentId(Long parentId) {
         return parentId == null ? 0L : parentId;
+    }
+
+    private void ensureCategoryCodeAvailable(String categoryCode, Long currentCategoryId) {
+        LyPromptCategory existing = categoryMapper.selectOne(new LambdaQueryWrapper<LyPromptCategory>()
+                .eq(LyPromptCategory::getCategoryCode, categoryCode)
+                .eq(LyPromptCategory::getIsDeleted, 0)
+                .last("LIMIT 1"));
+        if (existing != null && !existing.getId().equals(currentCategoryId)) {
+            throw new BizException(ErrorCode.BAD_REQUEST, "prompt category code already exists");
+        }
+    }
+
+    private void requireParentCategory(Long parentId) {
+        Long normalizedParentId = defaultParentId(parentId);
+        if (normalizedParentId == 0L) {
+            return;
+        }
+        requireCategory(normalizedParentId);
     }
 
     private PromptCategoryVO toCategoryVO(LyPromptCategory entity) {

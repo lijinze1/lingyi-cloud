@@ -210,7 +210,7 @@ public class ChatbotServiceImpl implements ChatbotService {
     }
 
     private DashScopeChatOptions buildOptions(AiModelConfig modelConfig) {
-        DashScopeChatOptions.DashscopeChatOptionsBuilder builder = DashScopeChatOptions.builder();
+        var builder = DashScopeChatOptions.builder();
         if (!isBlank(modelConfig.getModel())) {
             builder.withModel(modelConfig.getModel());
         }

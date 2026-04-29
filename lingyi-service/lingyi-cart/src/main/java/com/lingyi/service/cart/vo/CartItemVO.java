@@ -5,9 +5,9 @@ import lombok.Data;
 
 @Data
 public class CartItemVO {
-    private Long id;
-    private Long skuId;
-    private Long spuId;
+    private String id;
+    private String skuId;
+    private String spuId;
     private String title;
     private String attrsJson;
     private String mainImage;

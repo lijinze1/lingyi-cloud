@@ -80,10 +80,18 @@ spring:
               uri: lb://lingyi-prompt
               predicates:
                 - Path=/api/prompt/**
+            - id: ai-admin-prompt-service
+              uri: lb://lingyi-prompt
+              predicates:
+                - Path=/api/ai/admin/prompts/**,/api/ai/admin/prompt-categories/**
             - id: rag-service
               uri: lb://lingyi-rag
               predicates:
                 - Path=/api/rag/**
+            - id: ai-admin-rag-service
+              uri: lb://lingyi-rag
+              predicates:
+                - Path=/api/ai/admin/kbs/**
             - id: config-service
               uri: lb://lingyi-config
               predicates:

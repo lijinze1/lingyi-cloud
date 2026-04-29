@@ -159,6 +159,17 @@ public class PromptAdminServiceImpl implements PromptAdminService {
 
     @Override
     @Transactional
+    public void deleteVersion(Long promptId, Long versionId) {
+        LyPrompt prompt = requirePrompt(promptId);
+        LyPromptVersion version = requirePromptVersion(promptId, versionId);
+        if (Integer.valueOf(1).equals(version.getStatus()) || versionId.equals(prompt.getPublishedVersionId())) {
+            throw new BizException(ErrorCode.BAD_REQUEST, "current published version cannot be deleted");
+        }
+        versionMapper.deleteById(versionId);
+    }
+
+    @Override
+    @Transactional
     public PromptVersionVO publish(Long promptId, Long versionId) {
         LyPrompt prompt = requirePrompt(promptId);
         LyPromptVersion targetVersion = requirePromptVersion(promptId, versionId);

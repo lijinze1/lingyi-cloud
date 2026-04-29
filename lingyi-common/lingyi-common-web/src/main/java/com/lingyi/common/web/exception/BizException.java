@@ -11,6 +11,11 @@ public class BizException extends RuntimeException {
         this.code = errorCode.getCode();
     }
 
+    public BizException(ErrorCode errorCode, String message) {
+        super(message);
+        this.code = errorCode.getCode();
+    }
+
     public BizException(String code, String message) {
         super(message);
         this.code = code;
@@ -20,4 +25,3 @@ public class BizException extends RuntimeException {
         return code;
     }
 }
-

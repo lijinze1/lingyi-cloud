@@ -1,4 +1,4 @@
-import { getToken } from "./auth";
+import { clearAuth, getToken } from "./auth";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:18080";
 
@@ -15,11 +15,12 @@ function toQueryString(params = {}) {
 }
 
 export async function request(path, options = {}) {
+  const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
   const headers = {
     ...(options.headers || {})
   };
 
-  if (options.body && !headers["Content-Type"]) {
+  if (options.body && !isFormData && !headers["Content-Type"]) {
     headers["Content-Type"] = "application/json";
   }
 
@@ -28,8 +29,13 @@ export async function request(path, options = {}) {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${BASE_URL}${path}`, {
+  const response = await fetch(`${BASE_URL}${path}${toQueryString(options.params)}`, {
     ...options,
+    body: isFormData
+      ? options.body
+      : options.body != null && typeof options.body !== "string"
+        ? JSON.stringify(options.body)
+        : options.body,
     headers
   });
 
@@ -38,6 +44,20 @@ export async function request(path, options = {}) {
     const message = data.message || `HTTP ${response.status}`;
     const error = new Error(message);
     error.code = data.code || String(response.status);
+    if (
+      !options.skipAuth &&
+      typeof window !== "undefined" &&
+      (response.status === 401 || error.code === "A0401")
+    ) {
+      clearAuth();
+      window.dispatchEvent(
+        new CustomEvent("lingyi-auth-expired", {
+          detail: {
+            redirect: `${window.location.pathname}${window.location.search}${window.location.hash}`
+          }
+        })
+      );
+    }
     throw error;
   }
   return data.data;
@@ -105,6 +125,47 @@ export async function me() {
 
 export async function sessionStatus() {
   return request("/api/user/auth/session/status", { method: "GET" });
+}
+
+export async function createChatbotSession(payload) {
+  return request("/api/chatbot/sessions", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function listChatbotSessions(userId) {
+  return request("/api/chatbot/sessions", {
+    method: "GET",
+    params: { userId }
+  });
+}
+
+export async function listChatbotMessages(sessionId) {
+  return request(`/api/chatbot/sessions/${sessionId}/messages`, { method: "GET" });
+}
+
+export async function sendChatbotMessage(payload) {
+  return request("/api/chatbot/messages", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function consultDiagnosis({ sessionId, userId, question, images = [] }) {
+  const form = new FormData();
+  if (sessionId !== undefined && sessionId !== null && sessionId !== "") {
+    form.append("sessionId", String(sessionId));
+  }
+  form.append("userId", String(userId));
+  form.append("question", question);
+  images.forEach((image) => {
+    form.append("images", image);
+  });
+  return request("/api/diagnosis/consult", {
+    method: "POST",
+    body: form
+  });
 }
 
 export async function pingProduct() {
@@ -195,6 +256,14 @@ export async function mockPaySuccess(paymentNo) {
 
 export async function listCurrentSeckillActivities() {
   return request("/api/seckill/activities/current", { method: "GET" });
+}
+
+export async function getSeckillActivitySkuDetail(activityId, activitySkuId) {
+  return request(`/api/seckill/activities/${activityId}/skus/${activitySkuId}`, { method: "GET" });
+}
+
+export async function getCurrentSeckillRecord(activityId, activitySkuId) {
+  return request(`/api/seckill/activities/${activityId}/skus/${activitySkuId}/current-record`, { method: "GET" });
 }
 
 export async function attemptSeckill(activityId, activitySkuId) {

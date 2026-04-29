@@ -36,6 +36,13 @@ function logout() {
   menuOpen.value = false;
   router.push("/login");
 }
+
+function isNavActive(target) {
+  if (target === "/") {
+    return route.path === "/";
+  }
+  return route.path === target || route.path.startsWith(`${target}/`);
+}
 </script>
 
 <template>
@@ -53,9 +60,10 @@ function logout() {
         </RouterLink>
 
         <nav class="store-nav" aria-label="主导航">
-          <RouterLink class="store-nav-link" to="/">首页</RouterLink>
-          <RouterLink class="store-nav-link" to="/products">商品</RouterLink>
-          <RouterLink class="store-nav-link" to="/cart">购物车</RouterLink>
+          <RouterLink :class="['store-nav-link', { active: isNavActive('/') }]" to="/">首页</RouterLink>
+          <RouterLink :class="['store-nav-link', { active: isNavActive('/products') }]" to="/products">商品</RouterLink>
+          <RouterLink :class="['store-nav-link', { active: isNavActive('/seckill') }]" to="/seckill">秒杀</RouterLink>
+          <RouterLink :class="['store-nav-link', { active: isNavActive('/cart') }]" to="/cart">购物车</RouterLink>
         </nav>
 
         <div class="store-actions">
@@ -159,7 +167,7 @@ function logout() {
 }
 
 .store-nav-link:hover,
-.store-nav-link.router-link-active {
+.store-nav-link.active {
   background: rgba(255, 109, 77, 0.1);
   color: #241912;
   transform: translateY(-1px);

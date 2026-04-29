@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { computed, onMounted, reactive, ref } from "vue";
 import {
   createPrompt,
@@ -6,21 +6,18 @@ import {
   createPromptVersion,
   deletePrompt,
   deletePromptCategory,
+  deletePromptVersion,
   flattenTree,
   formatDateTime,
   getPromptDetail,
   listPromptCategories,
   pagePrompts,
-  prettyJson,
   publishPromptVersion,
-  rollbackPromptVersion,
   updatePrompt,
   updatePromptCategory
 } from "@shared";
 import { ElMessage, ElMessageBox } from "element-plus";
 import {
-  ChatDotRound,
-  CircleCheck,
   EditPen,
   FolderAdd,
   Plus,
@@ -76,6 +73,8 @@ const promptForm = reactive({
 });
 
 const versionDialogVisible = ref(false);
+const versionDialogMode = ref("create");
+const versionSourceVersion = ref(null);
 const versionFormRef = ref();
 const versionSaving = ref(false);
 const versionForm = reactive({
@@ -92,10 +91,72 @@ const versionForm = reactive({
   }
 });
 
+function normalizeId(value) {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+  return String(value);
+}
+
+function matchId(left, right) {
+  return normalizeId(left) === normalizeId(right);
+}
+
+function normalizeCategoryNodes(nodes = []) {
+  return nodes.map((node) => ({
+    ...node,
+    id: normalizeId(node.id),
+    parentId: normalizeId(node.parentId) || "0",
+    children: normalizeCategoryNodes(node.children || [])
+  }));
+}
+
+function normalizePromptRow(row) {
+  return {
+    ...row,
+    id: normalizeId(row.id),
+    categoryId: normalizeId(row.categoryId),
+    publishedVersionId: normalizeId(row.publishedVersionId)
+  };
+}
+
+function normalizePromptDetail(detail) {
+  if (!detail) {
+    return null;
+  }
+  return {
+    ...detail,
+    id: normalizeId(detail.id),
+    categoryId: normalizeId(detail.categoryId),
+    publishedVersionId: normalizeId(detail.publishedVersionId),
+    versions: (detail.versions || [])
+      .map((version) => ({
+        ...version,
+        id: normalizeId(version.id),
+        promptId: normalizeId(version.promptId)
+      }))
+      .sort((left, right) => {
+        if (left.status !== right.status) {
+          return right.status - left.status;
+        }
+        return (right.versionNo || 0) - (left.versionNo || 0);
+      })
+  };
+}
+
 const categoryOptions = computed(() => flattenTree(categories.value).map((item) => ({
   label: `${"　".repeat(item.level)}${item.categoryName}`,
   value: item.id
 })));
+
+const currentCategory = computed(() =>
+  flattenTree(categories.value).find((item) => matchId(item.id, selectedCategoryId.value)) || null
+);
+
+const hasCategoryFilter = computed(() => Boolean(currentCategory.value));
+const currentPublishedVersion = computed(() =>
+  (promptDetail.value?.versions || []).find((item) => item.status === 1) || null
+);
 
 const promptStats = computed(() => {
   const records = promptPage.value.records || [];
@@ -132,13 +193,47 @@ function promptStatusText(status) {
 }
 
 function versionStatusText(status) {
-  return status === 1 ? "已发布" : "草稿";
+  if (status === 1) return "已发布";
+  if (status === 2) return "历史版本";
+  return "草稿";
+}
+
+function versionDialogTitle() {
+  return versionDialogMode.value === "derive" ? "基于当前版本创建新版本" : "新建版本";
+}
+
+function formatModelSummary(modelConfig) {
+  if (!modelConfig) {
+    return "未配置";
+  }
+  const segments = [
+    `model: ${modelConfig.model || "--"}`,
+    `temperature: ${modelConfig.temperature ?? "--"}`,
+    `topP: ${modelConfig.topP ?? "--"}`,
+    `topK: ${modelConfig.topK ?? "--"}`,
+    `maxTokens: ${modelConfig.maxTokens ?? "--"}`
+  ];
+  return segments.join("  |  ");
+}
+
+function formatJsonText(text) {
+  if (!text || !text.trim()) {
+    return "--";
+  }
+  try {
+    return JSON.stringify(JSON.parse(text), null, 2);
+  } catch {
+    return text;
+  }
 }
 
 async function loadCategories() {
   categoryLoading.value = true;
   try {
-    categories.value = await listPromptCategories();
+    categories.value = normalizeCategoryNodes(await listPromptCategories());
+  } catch (error) {
+    categories.value = [];
+    ElMessage.error(error?.message || "分类加载失败");
   } finally {
     categoryLoading.value = false;
   }
@@ -157,18 +252,26 @@ async function loadPrompts(reset = false) {
       categoryId: selectedCategoryId.value
     });
     promptPage.value = {
-      records: pageData.records || [],
+      records: (pageData.records || []).map(normalizePromptRow),
       total: pageData.total || 0,
       current: pageData.current || promptPage.value.current,
       size: pageData.size || promptPage.value.size
     };
     if (selectedPromptId.value) {
-      const stillExists = promptPage.value.records.some((item) => item.id === selectedPromptId.value);
+      const stillExists = promptPage.value.records.some((item) => matchId(item.id, selectedPromptId.value));
       if (!stillExists) {
         promptDetail.value = null;
         selectedPromptId.value = null;
       }
     }
+  } catch (error) {
+    promptPage.value = {
+      records: [],
+      total: 0,
+      current: promptPage.value.current,
+      size: promptPage.value.size
+    };
+    ElMessage.error(error?.message || "提示词列表加载失败");
   } finally {
     loading.value = false;
   }
@@ -177,21 +280,24 @@ async function loadPrompts(reset = false) {
 async function loadPromptDetail(promptId) {
   if (!promptId) return;
   detailLoading.value = true;
-  selectedPromptId.value = promptId;
+  selectedPromptId.value = normalizeId(promptId);
   try {
-    promptDetail.value = await getPromptDetail(promptId);
+    promptDetail.value = normalizePromptDetail(await getPromptDetail(promptId));
+  } catch (error) {
+    promptDetail.value = null;
+    ElMessage.error(error?.message || "提示词详情加载失败");
   } finally {
     detailLoading.value = false;
   }
 }
 
 function handleCategoryNodeClick(node) {
-  selectedCategoryId.value = node?.id;
+  selectedCategoryId.value = normalizeId(node?.id);
   loadPrompts(true);
 }
 
 function resetCategoryFilter() {
-  selectedCategoryId.value = undefined;
+  selectedCategoryId.value = null;
   loadPrompts(true);
 }
 
@@ -209,7 +315,7 @@ function openCreateCategoryDialog() {
 }
 
 function openEditCategoryDialog() {
-  const selected = flattenTree(categories.value).find((item) => item.id === selectedCategoryId.value);
+  const selected = currentCategory.value;
   if (!selected) {
     ElMessage.warning("请先选择分类");
     return;
@@ -252,7 +358,7 @@ async function submitCategory() {
 }
 
 async function removeCategory() {
-  const selected = flattenTree(categories.value).find((item) => item.id === selectedCategoryId.value);
+  const selected = currentCategory.value;
   if (!selected) {
     ElMessage.warning("请先选择分类");
     return;
@@ -280,7 +386,7 @@ function openCreatePromptDialog() {
 }
 
 function openEditPromptDialog(row) {
-  const prompt = row || promptDetail.value;
+  const prompt = row ? normalizePromptRow(row) : promptDetail.value;
   if (!prompt) {
     ElMessage.warning("请先选择提示词");
     return;
@@ -311,7 +417,7 @@ async function submitPrompt() {
       status: promptForm.status
     };
     if (promptDialogMode.value === "create") {
-      const created = await createPrompt(payload);
+      const created = normalizePromptRow(await createPrompt(payload));
       ElMessage.success("提示词已创建");
       promptDialogVisible.value = false;
       await loadPrompts(true);
@@ -329,7 +435,7 @@ async function submitPrompt() {
 }
 
 async function removePrompt(row) {
-  const prompt = row || promptDetail.value;
+  const prompt = row ? normalizePromptRow(row) : promptDetail.value;
   if (!prompt) {
     ElMessage.warning("请先选择提示词");
     return;
@@ -342,23 +448,44 @@ async function removePrompt(row) {
   await loadPrompts();
 }
 
+function buildDefaultModelConfig(modelConfig = {}) {
+  return {
+    model: modelConfig.model || "",
+    temperature: modelConfig.temperature ?? 0.2,
+    topP: modelConfig.topP ?? 0.8,
+    topK: modelConfig.topK ?? 40,
+    maxTokens: modelConfig.maxTokens ?? 2000,
+    presencePenalty: modelConfig.presencePenalty ?? 0,
+    frequencyPenalty: modelConfig.frequencyPenalty ?? 0
+  };
+}
+
 function openCreateVersionDialog() {
   if (!promptDetail.value?.id) {
     ElMessage.warning("请先选择提示词");
     return;
   }
+  versionDialogMode.value = "create";
+  versionSourceVersion.value = null;
   Object.assign(versionForm, {
     content: "",
     variablesJson: "{\n  \n}",
-    modelConfig: {
-      model: "",
-      temperature: 0.2,
-      topP: 0.8,
-      topK: 40,
-      maxTokens: 2000,
-      presencePenalty: 0,
-      frequencyPenalty: 0
-    }
+    modelConfig: buildDefaultModelConfig()
+  });
+  versionDialogVisible.value = true;
+}
+
+function openDeriveVersionDialog(version) {
+  if (!promptDetail.value?.id) {
+    ElMessage.warning("请先选择提示词");
+    return;
+  }
+  versionDialogMode.value = "derive";
+  versionSourceVersion.value = version;
+  Object.assign(versionForm, {
+    content: version?.content || "",
+    variablesJson: formatJsonText(version?.variablesJson) === "--" ? "{\n  \n}" : formatJsonText(version?.variablesJson),
+    modelConfig: buildDefaultModelConfig(version?.modelConfig)
   });
   versionDialogVisible.value = true;
 }
@@ -400,17 +527,18 @@ async function submitVersion() {
 }
 
 async function publishVersion(version) {
-  await ElMessageBox.confirm(`确认发布 V${version.versionNo} 吗？`, "发布版本", { type: "warning" });
+  const actionText = version.status === 0 ? "设为当前生效版本" : "重新设为当前生效版本";
+  await ElMessageBox.confirm(`确认将 V${version.versionNo} ${actionText}吗？`, "启用版本", { type: "warning" });
   await publishPromptVersion(version.promptId, version.id);
-  ElMessage.success("版本已发布");
+  ElMessage.success(`V${version.versionNo} 已设为当前版本`);
   await loadPromptDetail(version.promptId);
   await loadPrompts();
 }
 
-async function rollbackVersion(version) {
-  await ElMessageBox.confirm(`确认回滚到 V${version.versionNo} 吗？`, "回滚版本", { type: "warning" });
-  await rollbackPromptVersion(version.promptId, version.id);
-  ElMessage.success("已完成回滚");
+async function removeVersion(version) {
+  await ElMessageBox.confirm(`确认删除 V${version.versionNo} 吗？删除后无法恢复。`, "删除版本", { type: "warning" });
+  await deletePromptVersion(version.promptId, version.id);
+  ElMessage.success(`V${version.versionNo} 已删除`);
   await loadPromptDetail(version.promptId);
   await loadPrompts();
 }
@@ -418,6 +546,10 @@ async function rollbackVersion(version) {
 function handlePageChange(current) {
   promptPage.value.current = current;
   loadPrompts();
+}
+
+function handlePromptRowClick(row) {
+  loadPromptDetail(row.id);
 }
 
 onMounted(async () => {
@@ -428,37 +560,32 @@ onMounted(async () => {
 
 <template>
   <section class="ly-page-stack">
-    <div class="ly-kpi-grid">
-      <div class="ly-kpi-item">
-        <span>分类总数</span>
-        <strong>{{ promptStats.categoryCount }}</strong>
-        <p>支持树形分类，用于区分客服、问诊和 RAG 系统提示词。</p>
+    <el-card class="stats-shell" shadow="never">
+      <div class="ly-kpi-grid">
+        <div class="ly-kpi-item">
+          <span>分类总数</span>
+          <strong>{{ promptStats.categoryCount }}</strong>
+        </div>
+        <div class="ly-kpi-item">
+          <span>提示词总数</span>
+          <strong>{{ promptStats.promptCount }}</strong>
+        </div>
+        <div class="ly-kpi-item">
+          <span>启用中</span>
+          <strong>{{ promptStats.enabledCount }}</strong>
+        </div>
+        <div class="ly-kpi-item">
+          <span>已挂发布版本</span>
+          <strong>{{ promptStats.publishedCount }}</strong>
+        </div>
       </div>
-      <div class="ly-kpi-item">
-        <span>提示词总数</span>
-        <strong>{{ promptStats.promptCount }}</strong>
-        <p>当前按筛选条件返回的提示词主档数量。</p>
-      </div>
-      <div class="ly-kpi-item">
-        <span>启用中</span>
-        <strong>{{ promptStats.enabledCount }}</strong>
-        <p>处于启用状态，可继续进入版本治理与上线流程。</p>
-      </div>
-      <div class="ly-kpi-item">
-        <span>已挂发布版本</span>
-        <strong>{{ promptStats.publishedCount }}</strong>
-        <p>主档已经绑定已发布版本，可被运行时消费。</p>
-      </div>
-    </div>
+    </el-card>
 
     <div class="prompt-layout">
       <el-card class="ly-panel-card prompt-sidebar" shadow="never">
         <template #header>
           <div class="ly-page-toolbar">
-            <div>
-              <strong>分类树</strong>
-              <p class="ly-page-subtle">按场景维护提示词归属，方便运营分治。</p>
-            </div>
+            <strong>分类树</strong>
             <el-button :icon="RefreshRight" text @click="loadCategories" />
           </div>
         </template>
@@ -469,34 +596,38 @@ onMounted(async () => {
           <el-button :icon="Remove" @click="removeCategory">删除</el-button>
         </div>
 
-        <el-button v-if="selectedCategoryId" text @click="resetCategoryFilter">清空分类过滤</el-button>
+        <div class="prompt-category-status">
+          <span>{{ currentCategory ? `当前分类：${currentCategory.categoryName}` : "当前分类：全部提示词" }}</span>
+          <el-button v-if="hasCategoryFilter" text @click="resetCategoryFilter">清空筛选</el-button>
+        </div>
 
         <el-skeleton :loading="categoryLoading" animated>
           <template #template>
             <el-skeleton-item variant="rect" style="height: 280px; border-radius: 18px;" />
           </template>
-          <el-tree
-            :data="categories"
-            node-key="id"
-            :props="{ label: 'categoryName', children: 'children' }"
-            highlight-current
-            default-expand-all
-            @node-click="handleCategoryNodeClick"
-          />
+          <el-scrollbar class="prompt-tree-scroll">
+            <el-tree
+              :data="categories"
+              :current-node-key="selectedCategoryId"
+              node-key="id"
+              :props="{ label: 'categoryName', children: 'children' }"
+              highlight-current
+              default-expand-all
+              :expand-on-click-node="false"
+              @node-click="handleCategoryNodeClick"
+            />
+          </el-scrollbar>
         </el-skeleton>
       </el-card>
 
       <div class="prompt-main">
         <el-card class="ly-panel-card" shadow="never">
-          <template #header>
-            <div class="ly-page-toolbar">
-              <div>
-                <strong>提示词列表</strong>
-                <p class="ly-page-subtle">按主档管理编码、业务场景和当前生效版本。</p>
-              </div>
-              <el-button type="primary" :icon="Plus" @click="openCreatePromptDialog">新建提示词</el-button>
-            </div>
-          </template>
+        <template #header>
+          <div class="ly-page-toolbar">
+            <strong>{{ currentCategory ? `${currentCategory.categoryName} · 提示词列表` : "提示词列表" }}</strong>
+            <el-button type="primary" :icon="Plus" @click="openCreatePromptDialog">新建提示词</el-button>
+          </div>
+        </template>
 
           <div class="prompt-filter-bar">
             <el-input
@@ -509,46 +640,47 @@ onMounted(async () => {
             <el-button @click="loadPrompts(true)">查询</el-button>
           </div>
 
-          <el-table
-            v-loading="loading"
-            :data="promptPage.records"
-            stripe
-            border
-            @row-click="loadPromptDetail($event.id)"
-          >
-            <el-table-column label="提示词" min-width="250">
-              <template #default="{ row }">
-                <div class="ly-table-title">
-                  <strong>{{ row.name }}</strong>
-                  <div class="ly-inline-meta">
-                    <span>编码：{{ row.promptCode }}</span>
-                    <span>场景：{{ row.bizScene }}</span>
+          <div class="prompt-table-shell">
+            <el-table
+              v-loading="loading"
+              :data="promptPage.records"
+              stripe
+              border
+              @row-click="handlePromptRowClick"
+            >
+              <el-table-column label="提示词" min-width="250">
+                <template #default="{ row }">
+                  <div class="ly-table-title">
+                    <strong>{{ row.name }}</strong>
+                    <div class="ly-inline-meta">
+                      <span>编码：{{ row.promptCode }}</span>
+                      <span>场景：{{ row.bizScene }}</span>
+                    </div>
                   </div>
-                </div>
-              </template>
-            </el-table-column>
-            <el-table-column prop="description" label="说明" min-width="220" show-overflow-tooltip />
-            <el-table-column label="状态" width="110">
-              <template #default="{ row }">
-                <el-tag :type="statusTagType(row.status)">{{ promptStatusText(row.status) }}</el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column label="发布版本" width="110">
-              <template #default="{ row }">
-                <span>{{ row.publishedVersionId ? `#${row.publishedVersionId}` : "--" }}</span>
-              </template>
-            </el-table-column>
-            <el-table-column label="创建时间" width="180">
-              <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
-            </el-table-column>
-            <el-table-column label="操作" width="180" fixed="right">
-              <template #default="{ row }">
-                <el-button link type="primary" @click.stop="loadPromptDetail(row.id)">查看</el-button>
-                <el-button link @click.stop="openEditPromptDialog(row)">编辑</el-button>
-                <el-button link type="danger" @click.stop="removePrompt(row)">删除</el-button>
-              </template>
-            </el-table-column>
-          </el-table>
+                </template>
+              </el-table-column>
+              <el-table-column prop="description" label="说明" min-width="220" show-overflow-tooltip />
+              <el-table-column label="状态" width="110">
+                <template #default="{ row }">
+                  <el-tag :type="statusTagType(row.status)">{{ promptStatusText(row.status) }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="发布版本" width="110">
+                <template #default="{ row }">
+                  <span>{{ row.publishedVersionId ? `#${row.publishedVersionId}` : "--" }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="创建时间" width="180">
+                <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+              </el-table-column>
+              <el-table-column label="操作" width="180" fixed="right">
+                <template #default="{ row }">
+                  <el-button link @click.stop="openEditPromptDialog(row)">编辑</el-button>
+                  <el-button link type="danger" @click.stop="removePrompt(row)">删除</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
 
           <div class="prompt-pagination">
             <el-pagination
@@ -562,19 +694,24 @@ onMounted(async () => {
         </el-card>
 
         <el-card class="ly-panel-card" shadow="never">
-          <template #header>
-            <div class="ly-page-toolbar">
-              <div>
-                <strong>版本工作区</strong>
-                <p class="ly-page-subtle">选中主档后可查看版本历史、参数配置与发布动作。</p>
-              </div>
-              <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <el-button :disabled="!promptDetail" @click="openEditPromptDialog()">编辑主档</el-button>
-                <el-button type="primary" :icon="Plus" :disabled="!promptDetail" @click="openCreateVersionDialog">
-                  新建版本
-                </el-button>
-              </div>
+        <template #header>
+          <div class="ly-page-toolbar">
+            <strong>{{ promptDetail ? `提示词详情与版本 · ${promptDetail.name}` : "提示词详情与版本" }}</strong>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <el-button :disabled="!promptDetail" @click="openEditPromptDialog()">编辑主档</el-button>
+              <el-button type="primary" :icon="Plus" :disabled="!promptDetail" @click="openCreateVersionDialog">
+                新建空白版本
+              </el-button>
+              <el-button
+                type="primary"
+                plain
+                :disabled="!currentPublishedVersion"
+                @click="openDeriveVersionDialog(currentPublishedVersion)"
+              >
+                基于当前版本修改
+              </el-button>
             </div>
+          </div>
           </template>
 
           <el-skeleton :loading="detailLoading" animated>
@@ -584,7 +721,7 @@ onMounted(async () => {
 
             <el-empty v-if="!promptDetail" description="点击列表中的提示词查看版本与参数" />
 
-            <template v-else>
+            <div v-else class="prompt-detail-stack">
               <el-descriptions :column="2" border class="prompt-detail-card">
                 <el-descriptions-item label="名称">{{ promptDetail.name }}</el-descriptions-item>
                 <el-descriptions-item label="编码">{{ promptDetail.promptCode }}</el-descriptions-item>
@@ -597,39 +734,53 @@ onMounted(async () => {
                 </el-descriptions-item>
               </el-descriptions>
 
-              <el-table :data="promptDetail.versions || []" border style="margin-top: 18px;">
-                <el-table-column label="版本" width="90">
-                  <template #default="{ row }">V{{ row.versionNo }}</template>
-                </el-table-column>
-                <el-table-column label="状态" width="120">
-                  <template #default="{ row }">
-                    <el-tag :type="row.status === 1 ? 'success' : 'info'">{{ versionStatusText(row.status) }}</el-tag>
-                  </template>
-                </el-table-column>
-                <el-table-column label="模型参数" min-width="260">
-                  <template #default="{ row }">
-                    <div class="ly-inline-meta">
-                      <span>model：{{ row.modelConfig?.model || "--" }}</span>
-                      <span>temperature：{{ row.modelConfig?.temperature ?? "--" }}</span>
-                      <span>topP：{{ row.modelConfig?.topP ?? "--" }}</span>
-                      <span>maxTokens：{{ row.modelConfig?.maxTokens ?? "--" }}</span>
+              <div class="prompt-workflow-tip">
+                <div>
+                  <strong>当前生效版本</strong>
+                  <span>{{ currentPublishedVersion ? `V${currentPublishedVersion.versionNo}` : "暂未发布版本" }}</span>
+                </div>
+                <p>修改提示词正文或模型参数时，建议基于当前版本创建新版本；确认无误后再发布。历史版本也可以随时重新设为当前版本。</p>
+              </div>
+
+              <div class="prompt-version-shell">
+                <div v-if="!(promptDetail.versions || []).length" class="prompt-empty-state">当前还没有版本内容。</div>
+                <div v-else class="prompt-version-list">
+                  <article v-for="row in promptDetail.versions" :key="row.id" class="prompt-version-card">
+                    <div class="prompt-version-head">
+                      <div class="prompt-version-title">
+                        <strong>V{{ row.versionNo }}</strong>
+                        <el-tag :type="row.status === 1 ? 'success' : 'info'">{{ versionStatusText(row.status) }}</el-tag>
+                      </div>
+                      <div class="prompt-version-actions">
+                        <el-button link @click="openDeriveVersionDialog(row)">基于此版本修改</el-button>
+                        <el-button v-if="row.status !== 1" link type="primary" @click="publishVersion(row)">设为当前版本</el-button>
+                        <el-button v-if="row.status !== 1" link type="danger" @click="removeVersion(row)">删除版本</el-button>
+                      </div>
                     </div>
-                  </template>
-                </el-table-column>
-                <el-table-column label="创建时间" width="180">
-                  <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
-                </el-table-column>
-                <el-table-column label="发布时间" width="180">
-                  <template #default="{ row }">{{ formatDateTime(row.publishedAt) }}</template>
-                </el-table-column>
-                <el-table-column label="操作" width="160">
-                  <template #default="{ row }">
-                    <el-button v-if="row.status !== 1" link type="primary" @click="publishVersion(row)">发布</el-button>
-                    <el-button link @click="rollbackVersion(row)">回滚</el-button>
-                  </template>
-                </el-table-column>
-              </el-table>
-            </template>
+
+                    <div class="prompt-version-meta">
+                      <span>创建时间：{{ formatDateTime(row.createdAt) }}</span>
+                      <span>发布时间：{{ formatDateTime(row.publishedAt) }}</span>
+                    </div>
+
+                    <div class="prompt-version-block">
+                      <h4>提示词正文</h4>
+                      <pre>{{ row.content || "--" }}</pre>
+                    </div>
+
+                    <div class="prompt-version-block">
+                      <h4>变量定义</h4>
+                      <pre>{{ formatJsonText(row.variablesJson) }}</pre>
+                    </div>
+
+                    <div class="prompt-version-block">
+                      <h4>模型参数</h4>
+                      <pre>{{ formatModelSummary(row.modelConfig) }}</pre>
+                    </div>
+                  </article>
+                </div>
+              </div>
+            </div>
           </el-skeleton>
         </el-card>
       </div>
@@ -711,8 +862,12 @@ onMounted(async () => {
       </template>
     </el-dialog>
 
-    <el-dialog v-model="versionDialogVisible" title="新建版本" width="860px">
+    <el-dialog v-model="versionDialogVisible" :title="versionDialogTitle()" width="860px">
       <el-form ref="versionFormRef" :model="versionForm" :rules="versionRules" label-position="top">
+        <div class="version-editor-tip">
+          <strong>{{ versionDialogMode === "derive" ? `源版本：V${versionSourceVersion?.versionNo || "--"}` : "空白新版本" }}</strong>
+          <span>{{ versionDialogMode === "derive" ? "会复制源版本正文和模型参数，保存后生成一个新的草稿版本。" : "适合从头起草新的提示词版本。" }}</span>
+        </div>
         <el-form-item label="版本内容" prop="content">
           <el-input v-model="versionForm.content" type="textarea" :rows="12" />
         </el-form-item>
@@ -745,34 +900,93 @@ onMounted(async () => {
       </el-form>
       <template #footer>
         <el-button @click="versionDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="versionSaving" @click="submitVersion">创建版本</el-button>
+        <el-button type="primary" :loading="versionSaving" @click="submitVersion">保存为新版本</el-button>
       </template>
     </el-dialog>
   </section>
 </template>
 
 <style scoped>
+.stats-shell {
+  border: 0;
+  border-radius: 28px;
+  background: rgba(255, 252, 248, 0.92);
+  box-shadow: 0 18px 36px rgba(71, 44, 25, 0.08);
+}
+
+:deep(.stats-shell .el-card__body) {
+  padding: 18px;
+}
+
+.ly-kpi-item {
+  min-width: 0;
+  padding: 22px 24px;
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 248, 240, 0.9));
+  border: 1px solid rgba(90, 56, 35, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.ly-kpi-item span {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  color: rgba(36, 25, 18, 0.62);
+  letter-spacing: 0.01em;
+}
+
+.ly-kpi-item strong {
+  display: block;
+  margin-top: 12px;
+  font-size: 40px;
+  line-height: 1;
+  color: #241912;
+}
+
 .prompt-layout {
   display: grid;
-  grid-template-columns: 300px minmax(0, 1fr);
+  grid-template-columns: 1fr;
   gap: 18px;
 }
 
-.prompt-sidebar {
-  align-self: start;
+:deep(.prompt-sidebar .el-card__body),
+:deep(.prompt-main > .el-card .el-card__body) {
+  display: grid;
+  gap: 18px;
 }
 
 .prompt-side-actions,
-.prompt-filter-bar,
 .prompt-form-grid,
 .version-option-grid {
   display: grid;
   gap: 12px;
 }
 
+.prompt-side-actions {
+  grid-template-columns: repeat(3, minmax(0, auto));
+  align-items: center;
+  justify-content: start;
+}
+
+.prompt-tree-scroll {
+  max-height: 340px;
+  padding-right: 8px;
+}
+
+.prompt-category-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 36px;
+  color: rgba(36, 25, 18, 0.62);
+  font-size: 14px;
+}
+
 .prompt-filter-bar {
+  display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  margin-bottom: 18px;
+  gap: 12px;
 }
 
 .prompt-main {
@@ -780,14 +994,135 @@ onMounted(async () => {
   gap: 18px;
 }
 
+.prompt-table-shell,
+.prompt-version-shell {
+  overflow: hidden;
+  border-radius: 22px;
+  border: 1px solid rgba(90, 56, 35, 0.08);
+}
+
+.prompt-table-shell :deep(.el-table),
+.prompt-version-shell :deep(.el-table) {
+  width: 100%;
+}
+
+.prompt-detail-stack {
+  display: grid;
+  gap: 18px;
+}
+
+.prompt-workflow-tip,
+.version-editor-tip {
+  display: grid;
+  gap: 8px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255, 250, 244, 0.94), rgba(255, 244, 234, 0.92));
+  border: 1px solid rgba(90, 56, 35, 0.08);
+}
+
+.prompt-workflow-tip > div,
+.version-editor-tip {
+  color: #241912;
+}
+
+.prompt-workflow-tip > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.prompt-workflow-tip strong,
+.version-editor-tip strong {
+  font-size: 15px;
+}
+
+.prompt-workflow-tip span,
+.version-editor-tip span,
+.prompt-workflow-tip p {
+  margin: 0;
+  color: rgba(36, 25, 18, 0.68);
+  line-height: 1.7;
+  font-size: 13px;
+}
+
+.prompt-version-list {
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+  background: rgba(255, 251, 246, 0.72);
+}
+
+.prompt-version-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 20px;
+  background: #fffdfa;
+  border: 1px solid rgba(90, 56, 35, 0.08);
+}
+
+.prompt-version-head,
+.prompt-version-title,
+.prompt-version-meta,
+.prompt-version-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.prompt-version-head {
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.prompt-version-title strong {
+  font-size: 18px;
+  color: #241912;
+}
+
+.prompt-version-meta {
+  flex-wrap: wrap;
+  color: rgba(36, 25, 18, 0.58);
+  font-size: 13px;
+}
+
+.prompt-version-block {
+  display: grid;
+  gap: 8px;
+}
+
+.prompt-version-block h4 {
+  margin: 0;
+  color: #241912;
+  font-size: 14px;
+}
+
+.prompt-version-block pre {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #fff7f0;
+  color: #3a2a20;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font: 13px/1.75 "Consolas", "SFMono-Regular", monospace;
+}
+
+.prompt-empty-state {
+  padding: 28px 20px;
+  color: rgba(36, 25, 18, 0.58);
+  text-align: center;
+}
+
 .prompt-pagination {
   display: flex;
   justify-content: flex-end;
-  margin-top: 18px;
 }
 
 .prompt-detail-card {
-  margin-bottom: 8px;
+  margin-bottom: 0;
 }
 
 .prompt-form-grid {
@@ -798,13 +1133,20 @@ onMounted(async () => {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-@media (max-width: 1180px) {
-  .prompt-layout {
-    grid-template-columns: 1fr;
-  }
-}
-
 @media (max-width: 860px) {
+  :deep(.stats-shell .el-card__body) {
+    padding: 14px;
+  }
+
+  .ly-kpi-item {
+    padding: 18px 20px;
+  }
+
+  .ly-kpi-item strong {
+    font-size: 32px;
+  }
+
+  .prompt-side-actions,
   .prompt-filter-bar,
   .prompt-form-grid,
   .version-option-grid {

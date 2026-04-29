@@ -38,4 +38,16 @@ springdoc:
     - group: lingyi-seckill
       paths-to-match: /api/seckill/**
 
+rocketmq:
+  name-server: ${ROCKETMQ_NAME_SERVER:127.0.0.1:9876}
+  producer:
+    group: ${ROCKETMQ_PRODUCER_GROUP:lingyi-seckill-producer}
+
+lingyi:
+  seckill:
+    async-mode: ${LINGYI_SECKILL_ASYNC_MODE:local}
+    topic: ${LINGYI_SECKILL_TOPIC:lingyi-seckill-create-order}
+    consumer-group: ${LINGYI_SECKILL_CONSUMER_GROUP:lingyi-seckill-consumer}
+    pending-timeout-seconds: ${LINGYI_SECKILL_PENDING_TIMEOUT_SECONDS:15}
+
 

@@ -10,6 +10,9 @@ spring:
     multipart:
       max-file-size: 20MB
       max-request-size: 20MB
+  ai:
+    dashscope:
+      api-key: ${DASHSCOPE_API_KEY:}
 
 mybatis-plus:
   configuration:

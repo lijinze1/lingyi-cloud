@@ -25,6 +25,8 @@ public interface PromptAdminService {
 
     PromptVersionVO createVersion(Long promptId, PromptVersionCreateRequest request);
 
+    void deleteVersion(Long promptId, Long versionId);
+
     PromptVersionVO publish(Long promptId, Long versionId);
 
     PromptVersionVO rollback(Long promptId, Long versionId);

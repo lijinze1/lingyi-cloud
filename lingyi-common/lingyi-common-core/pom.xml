@@ -12,5 +12,12 @@
 
     <artifactId>lingyi-common-core</artifactId>
     <packaging>jar</packaging>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+        </dependency>
+    </dependencies>
 </project>
 

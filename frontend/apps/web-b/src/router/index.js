@@ -1,5 +1,5 @@
 ﻿import { createRouter, createWebHistory } from "vue-router";
-import { clearAuth, getToken, getUser, hasRole, me, setUser } from "@shared";
+import { clearAuth, getToken, hasRole, me, setUser } from "@shared";
 import LoginView from "@/views/LoginView.vue";
 import DashboardView from "@/views/DashboardView.vue";
 import UsersView from "@/views/UsersView.vue";
@@ -38,15 +38,13 @@ router.beforeEach(async (to) => {
     return { path: "/login", query: { redirect: to.fullPath } };
   }
 
-  let user = getUser();
-  if (!user) {
-    try {
-      user = await me();
-      setUser(user);
-    } catch {
-      clearAuth();
-      return { path: "/login", query: { redirect: to.fullPath } };
-    }
+  let user;
+  try {
+    user = await me();
+    setUser(user);
+  } catch {
+    clearAuth();
+    return { path: "/login", query: { redirect: to.fullPath } };
   }
 
   if (!hasRole("ROLE_ADMIN")) {

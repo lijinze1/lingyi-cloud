@@ -4,6 +4,7 @@ import com.lingyi.common.web.domain.Result;
 import com.lingyi.service.seckill.service.SeckillService;
 import com.lingyi.service.seckill.vo.SeckillActivityVO;
 import com.lingyi.service.seckill.vo.SeckillAttemptVO;
+import com.lingyi.service.seckill.vo.SeckillDetailVO;
 import com.lingyi.service.seckill.vo.SeckillRecordVO;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +31,19 @@ public class SeckillController {
     @GetMapping("/activities/current")
     public Result<List<SeckillActivityVO>> currentActivities() {
         return Result.success(seckillService.listCurrentActivities());
+    }
+
+    @GetMapping("/activities/{activityId}/skus/{activitySkuId}")
+    public Result<SeckillDetailVO> detail(@PathVariable Long activityId,
+                                          @PathVariable Long activitySkuId) {
+        return Result.success(seckillService.getDetail(activityId, activitySkuId));
+    }
+
+    @GetMapping("/activities/{activityId}/skus/{activitySkuId}/current-record")
+    public Result<SeckillRecordVO> currentRecord(@RequestHeader("X-User-Id") Long userId,
+                                                 @PathVariable Long activityId,
+                                                 @PathVariable Long activitySkuId) {
+        return Result.success(seckillService.getCurrentRecord(userId, activityId, activitySkuId));
     }
 
     @PostMapping("/activities/{activityId}/skus/{activitySkuId}/attempt")

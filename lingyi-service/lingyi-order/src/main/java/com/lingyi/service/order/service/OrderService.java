@@ -16,6 +16,8 @@ public interface OrderService {
 
     OrderVO getByOrderNo(String orderNo);
 
+    OrderVO getById(Long orderId);
+
     void cancel(Long userId, String orderNo);
 
     void refund(Long userId, String orderNo);

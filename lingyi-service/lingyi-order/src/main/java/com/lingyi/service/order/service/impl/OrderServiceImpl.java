@@ -93,6 +93,15 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    public OrderVO getById(Long orderId) {
+        LyOrder order = orderMapper.selectById(orderId);
+        if (order == null) {
+            throw new BizException("O0404", "订单不存在");
+        }
+        return toVO(order);
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public OrderVO createSeckillOrder(InternalCreateSeckillOrderRequest request) {
         String seckillRemark = buildSeckillRemark(request);
@@ -101,7 +110,7 @@ public class OrderServiceImpl implements OrderService {
                 .eq(LyOrder::getOrderType, TYPE_SECKILL)
                 .eq(LyOrder::getRemark, seckillRemark)
                 .last("LIMIT 1"));
-        if (existing != null) {
+        if (existing != null && !Objects.equals(existing.getStatus(), STATUS_CANCELLED)) {
             return toVO(existing);
         }
 

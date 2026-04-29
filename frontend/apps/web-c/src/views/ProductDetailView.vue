@@ -11,6 +11,7 @@ const loading = ref(false);
 const saving = ref(false);
 const seckillSaving = ref(false);
 const error = ref("");
+const actionBusy = computed(() => loading.value || saving.value || seckillSaving.value);
 
 const isSeckillEntry = computed(() => route.query.seckill === "1");
 const seckillActivityId = computed(() => route.query.seckillActivityId || "");
@@ -62,6 +63,9 @@ function formatAttrs(attrsJson) {
 }
 
 async function handleAddCart() {
+  if (actionBusy.value) {
+    return;
+  }
   if (!selectedSku.value) {
     error.value = "当前商品没有可加入购物车的规格";
     return;
@@ -79,6 +83,9 @@ async function handleAddCart() {
 }
 
 function handleDirectBuy() {
+  if (actionBusy.value) {
+    return;
+  }
   if (!selectedSku.value || !product.value) {
     error.value = "当前商品没有可立即购买的规格";
     return;
@@ -93,6 +100,9 @@ function handleDirectBuy() {
 }
 
 async function handleSeckillBuy() {
+  if (actionBusy.value) {
+    return;
+  }
   if (!isSeckillEntry.value || !seckillActivityId.value || !seckillActivitySkuId.value) {
     error.value = "当前秒杀活动信息不完整";
     return;
@@ -151,6 +161,7 @@ async function handleSeckillBuy() {
           type="button"
           class="detail-sku-chip"
           :class="{ active: String(selectedSkuId) === String(sku.id) }"
+          :disabled="actionBusy"
           @click="selectedSkuId = sku.id"
         >
           {{ formatAttrs(sku.attrsJson) }}
@@ -162,7 +173,7 @@ async function handleSeckillBuy() {
         <span>{{ formatAttrs(selectedSku.attrsJson) }}</span>
       </div>
 
-      <div class="detail-actions">
+      <div class="detail-actions" :class="{ busy: actionBusy }">
         <button v-if="isSeckillEntry" type="button" class="ghost" @click="handleDirectBuy">普通购买</button>
         <button v-else type="button" class="ghost" @click="handleDirectBuy">领券购买</button>
         <button v-if="isSeckillEntry" type="button" :disabled="seckillSaving" @click="handleSeckillBuy">
@@ -314,6 +325,11 @@ async function handleSeckillBuy() {
   border-color: transparent;
 }
 
+.detail-sku-chip:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .detail-desc-block {
   display: grid;
   gap: 8px;
@@ -325,6 +341,11 @@ async function handleSeckillBuy() {
   gap: 12px;
 }
 
+.detail-actions.busy {
+  pointer-events: none;
+  opacity: 0.72;
+}
+
 .detail-actions button {
   min-height: 50px;
   padding: 0 22px;
@@ -332,6 +353,11 @@ async function handleSeckillBuy() {
   border-radius: 999px;
   cursor: pointer;
   font-weight: 700;
+}
+
+.detail-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .detail-actions button:last-child {

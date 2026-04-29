@@ -1,5 +1,5 @@
 ﻿<script setup>
-import { computed } from "vue";
+import { computed, onBeforeUnmount, onMounted } from "vue";
 import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
 import { clearAuth, getUser } from "@shared";
 
@@ -17,6 +17,23 @@ function logout() {
   clearAuth();
   router.push("/login");
 }
+
+function handleAuthExpired(event) {
+  const redirect = event?.detail?.redirect || route.fullPath || "/dashboard";
+  router.push({ path: "/login", query: { redirect } });
+}
+
+onMounted(() => {
+  if (typeof window !== "undefined") {
+    window.addEventListener("lingyi-auth-expired", handleAuthExpired);
+  }
+});
+
+onBeforeUnmount(() => {
+  if (typeof window !== "undefined") {
+    window.removeEventListener("lingyi-auth-expired", handleAuthExpired);
+  }
+});
 </script>
 
 <template>
@@ -88,6 +105,10 @@ function logout() {
 }
 
 .admin-sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
   padding: 24px 18px;
   background: linear-gradient(180deg, #2f2a38 0%, #26212c 100%);
   color: #fff6eb;
@@ -220,6 +241,9 @@ function logout() {
   }
 
   .admin-sidebar {
+    position: static;
+    height: auto;
+    overflow: visible;
     gap: 18px;
   }
 }

@@ -31,6 +31,11 @@ public class InternalOrderController {
         return Result.success(orderService.getByOrderNo(orderNo));
     }
 
+    @GetMapping("/orders/id/{orderId}")
+    public Result<OrderVO> getById(@PathVariable Long orderId) {
+        return Result.success(orderService.getById(orderId));
+    }
+
     @PostMapping("/orders/{orderNo}/pay-success")
     public Result<Void> paySuccess(@PathVariable String orderNo, @Valid @RequestBody PaySuccessRequest request) {
         orderService.paySuccess(orderNo, request.getPaymentNo());

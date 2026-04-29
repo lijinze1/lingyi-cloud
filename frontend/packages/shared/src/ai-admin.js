@@ -67,6 +67,12 @@ export function createPromptVersion(id, payload) {
   });
 }
 
+export function deletePromptVersion(promptId, versionId) {
+  return request(`/api/ai/admin/prompts/${promptId}/versions/${versionId}`, {
+    method: "DELETE"
+  });
+}
+
 export function publishPromptVersion(promptId, versionId) {
   return request(`/api/ai/admin/prompts/${promptId}/versions/${versionId}/publish`, {
     method: "POST"

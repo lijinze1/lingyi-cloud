@@ -58,6 +58,7 @@ function normalizeRedirect(target) {
 
 function buildUserSnapshot(data) {
   return {
+    id: data.userId,
     userId: data.userId,
     username: data.username,
     nickname: data.nickname,

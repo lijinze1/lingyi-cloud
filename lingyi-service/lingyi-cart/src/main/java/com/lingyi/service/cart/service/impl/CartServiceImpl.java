@@ -33,7 +33,7 @@ public class CartServiceImpl implements CartService {
                         .eq(LyCartItem::getUserId, userId)
                         .orderByDesc(LyCartItem::getUpdatedAt))
                 .stream()
-                .map(this::toVO)
+                .map(item -> toVO(item, requireSku(item.getSkuId())))
                 .toList();
     }
 
@@ -71,7 +71,7 @@ public class CartServiceImpl implements CartService {
             item.setPriceSnapshot(sku.getPrice());
             cartItemMapper.updateById(item);
         }
-        return toVO(item);
+        return toVO(item, sku);
     }
 
     @Override
@@ -84,7 +84,7 @@ public class CartServiceImpl implements CartService {
             item.setChecked(request.getChecked());
         }
         cartItemMapper.updateById(item);
-        return toVO(item);
+        return toVO(item, requireSku(item.getSkuId()));
     }
 
     @Override
@@ -101,12 +101,11 @@ public class CartServiceImpl implements CartService {
                 .forEach(item -> cartItemMapper.deleteById(item.getId()));
     }
 
-    private CartItemVO toVO(LyCartItem item) {
-        ProductSkuVO sku = requireSku(item.getSkuId());
+    private CartItemVO toVO(LyCartItem item, ProductSkuVO sku) {
         CartItemVO vo = new CartItemVO();
-        vo.setId(item.getId());
-        vo.setSkuId(item.getSkuId());
-        vo.setSpuId(sku.getSpuId());
+        vo.setId(item.getId() == null ? null : String.valueOf(item.getId()));
+        vo.setSkuId(item.getSkuId() == null ? null : String.valueOf(item.getSkuId()));
+        vo.setSpuId(sku.getSpuId() == null ? null : String.valueOf(sku.getSpuId()));
         vo.setTitle(sku.getTitle());
         vo.setAttrsJson(sku.getAttrsJson());
         vo.setMainImage(sku.getMainImage());

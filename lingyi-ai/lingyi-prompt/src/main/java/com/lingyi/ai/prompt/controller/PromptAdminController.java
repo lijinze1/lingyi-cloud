@@ -69,6 +69,12 @@ public class PromptAdminController {
         return Result.success(promptAdminService.createVersion(promptId, request));
     }
 
+    @DeleteMapping("/{promptId}/versions/{versionId}")
+    public Result<Void> deleteVersion(@PathVariable Long promptId, @PathVariable Long versionId) {
+        promptAdminService.deleteVersion(promptId, versionId);
+        return Result.success(null);
+    }
+
     @PostMapping("/{promptId}/versions/{versionId}/publish")
     public Result<PromptVersionVO> publish(@PathVariable Long promptId, @PathVariable Long versionId) {
         return Result.success(promptAdminService.publish(promptId, versionId));

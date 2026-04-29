@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { computed, onMounted, reactive, ref } from "vue";
 import {
   createKnowledgeBase,
@@ -18,10 +18,6 @@ import {
 } from "@shared";
 import { ElMessage, ElMessageBox } from "element-plus";
 import {
-  CollectionTag,
-  Delete,
-  DocumentAdd,
-  EditPen,
   Plus,
   RefreshRight,
   Search,
@@ -303,37 +299,32 @@ onMounted(async () => {
 
 <template>
   <section class="ly-page-stack">
-    <div class="ly-kpi-grid">
-      <div class="ly-kpi-item">
-        <span>知识库总数</span>
-        <strong>{{ kbStats.kbCount }}</strong>
-        <p>围绕业务场景拆分知识库，便于运营与索引治理。</p>
+    <el-card class="stats-shell" shadow="never">
+      <div class="ly-kpi-grid">
+        <div class="ly-kpi-item">
+          <span>知识库总数</span>
+          <strong>{{ kbStats.kbCount }}</strong>
+        </div>
+        <div class="ly-kpi-item">
+          <span>启用中</span>
+          <strong>{{ kbStats.enabledCount }}</strong>
+        </div>
+        <div class="ly-kpi-item">
+          <span>当前文件数</span>
+          <strong>{{ kbStats.fileCount }}</strong>
+        </div>
+        <div class="ly-kpi-item">
+          <span>已完成索引</span>
+          <strong>{{ kbStats.indexedCount }}</strong>
+        </div>
       </div>
-      <div class="ly-kpi-item">
-        <span>启用中</span>
-        <strong>{{ kbStats.enabledCount }}</strong>
-        <p>当前仍在启用状态的知识库主档数量。</p>
-      </div>
-      <div class="ly-kpi-item">
-        <span>当前文件数</span>
-        <strong>{{ kbStats.fileCount }}</strong>
-        <p>当前选中知识库下的已上传文档数量。</p>
-      </div>
-      <div class="ly-kpi-item">
-        <span>已完成索引</span>
-        <strong>{{ kbStats.indexedCount }}</strong>
-        <p>已成功进入向量库，可继续接入问答链路。</p>
-      </div>
-    </div>
+    </el-card>
 
     <div class="knowledge-layout">
       <el-card class="ly-panel-card" shadow="never">
         <template #header>
           <div class="ly-page-toolbar">
-            <div>
-              <strong>知识库列表</strong>
-              <p class="ly-page-subtle">维护集合、embedding 模型和切片策略。</p>
-            </div>
+            <strong>知识库列表</strong>
             <div style="display: flex; gap: 10px; flex-wrap: wrap;">
               <el-button :icon="RefreshRight" @click="loadKnowledgeBases">刷新</el-button>
               <el-button type="primary" :icon="Plus" @click="openCreateKbDialog">新建知识库</el-button>
@@ -352,40 +343,42 @@ onMounted(async () => {
           <el-button @click="loadKnowledgeBases(true)">查询</el-button>
         </div>
 
-        <el-table v-loading="loading" :data="kbPage.records" border stripe @row-click="selectKnowledgeBase($event.id)">
-          <el-table-column label="知识库" min-width="260">
-            <template #default="{ row }">
-              <div class="ly-table-title">
-                <strong>{{ row.name }}</strong>
-                <div class="ly-inline-meta">
-                  <span>编码：{{ row.kbCode }}</span>
-                  <span>集合：{{ row.qdrantCollection }}</span>
+        <div class="knowledge-table-shell">
+          <el-table v-loading="loading" :data="kbPage.records" border stripe @row-click="selectKnowledgeBase($event.id)">
+            <el-table-column label="知识库" min-width="260">
+              <template #default="{ row }">
+                <div class="ly-table-title">
+                  <strong>{{ row.name }}</strong>
+                  <div class="ly-inline-meta">
+                    <span>编码：{{ row.kbCode }}</span>
+                    <span>集合：{{ row.qdrantCollection }}</span>
+                  </div>
                 </div>
-              </div>
-            </template>
-          </el-table-column>
-          <el-table-column prop="embeddingModel" label="Embedding 模型" min-width="180" />
-          <el-table-column label="切片参数" width="160">
-            <template #default="{ row }">
-              <span>{{ row.chunkSize }} / {{ row.chunkOverlap }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="状态" width="110">
-            <template #default="{ row }">
-              <el-tag :type="kbStatusTag(row.status)">{{ kbStatusText(row.status) }}</el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column label="创建时间" width="180">
-            <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
-          </el-table-column>
-          <el-table-column label="操作" width="170" fixed="right">
-            <template #default="{ row }">
-              <el-button link @click.stop="openEditKbDialog(row)">编辑</el-button>
-              <el-button link type="primary" @click.stop="selectKnowledgeBase(row.id)">进入</el-button>
-              <el-button link type="danger" @click.stop="removeKb(row)">删除</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
+              </template>
+            </el-table-column>
+            <el-table-column prop="embeddingModel" label="Embedding 模型" min-width="180" />
+            <el-table-column label="切片参数" width="160">
+              <template #default="{ row }">
+                <span>{{ row.chunkSize }} / {{ row.chunkOverlap }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="状态" width="110">
+              <template #default="{ row }">
+                <el-tag :type="kbStatusTag(row.status)">{{ kbStatusText(row.status) }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="创建时间" width="180">
+              <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+            </el-table-column>
+            <el-table-column label="操作" width="170" fixed="right">
+              <template #default="{ row }">
+                <el-button link @click.stop="openEditKbDialog(row)">编辑</el-button>
+                <el-button link type="primary" @click.stop="selectKnowledgeBase(row.id)">进入</el-button>
+                <el-button link type="danger" @click.stop="removeKb(row)">删除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
 
         <div class="prompt-pagination">
           <el-pagination
@@ -401,13 +394,16 @@ onMounted(async () => {
       <el-card class="ly-panel-card" shadow="never">
         <template #header>
           <div class="ly-page-toolbar">
-            <div>
-              <strong>{{ selectedKb?.name || "文件工作区" }}</strong>
-              <p class="ly-page-subtle">
-                {{ selectedKb ? "上传文档后可执行解析、索引并查看切片。" : "先在左侧选择一个知识库。" }}
-              </p>
-            </div>
+            <strong>{{ selectedKb?.name ? `${selectedKb.name} · 文件工作区` : "文件工作区" }}</strong>
             <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <el-upload
+                :show-file-list="false"
+                :http-request="handleUpload"
+                accept=".txt,.md,.pdf,.docx"
+                :disabled="!selectedKb"
+              >
+                <el-button type="primary" :icon="Upload" :disabled="!selectedKb">上传文件</el-button>
+              </el-upload>
               <el-button :disabled="!selectedKb" @click="openEditKbDialog()">编辑知识库</el-button>
               <el-button :disabled="!selectedKb" type="danger" plain @click="removeKb()">删除知识库</el-button>
             </div>
@@ -415,63 +411,67 @@ onMounted(async () => {
         </template>
 
         <template v-if="selectedKb">
-          <el-descriptions :column="3" border>
-            <el-descriptions-item label="集合">{{ selectedKb.qdrantCollection }}</el-descriptions-item>
-            <el-descriptions-item label="Embedding 模型">{{ selectedKb.embeddingModel }}</el-descriptions-item>
-            <el-descriptions-item label="切片策略">{{ selectedKb.chunkSize }} / {{ selectedKb.chunkOverlap }}</el-descriptions-item>
-            <el-descriptions-item label="说明" :span="3">{{ selectedKb.description || "--" }}</el-descriptions-item>
-          </el-descriptions>
+          <div class="knowledge-workspace">
+            <el-descriptions :column="3" border>
+              <el-descriptions-item label="集合">{{ selectedKb.qdrantCollection }}</el-descriptions-item>
+              <el-descriptions-item label="Embedding 模型">{{ selectedKb.embeddingModel }}</el-descriptions-item>
+              <el-descriptions-item label="切片策略">{{ selectedKb.chunkSize }} / {{ selectedKb.chunkOverlap }}</el-descriptions-item>
+              <el-descriptions-item label="说明" :span="3">{{ selectedKb.description || "--" }}</el-descriptions-item>
+            </el-descriptions>
 
-          <div class="knowledge-upload-bar">
-            <div class="ly-inline-meta">
-              <span>支持格式：txt / md / pdf / docx</span>
-              <span>PDF 将按页解析，DOCX 将提取正文内容后切片。</span>
+            <div class="knowledge-upload-bar">
+              <div class="knowledge-upload-tip">
+                <strong>文档上传</strong>
+                <span>支持 `txt / md / pdf / docx`。上传后可继续执行“解析”和“索引”。</span>
+              </div>
+              <el-upload :show-file-list="false" :http-request="handleUpload" accept=".txt,.md,.pdf,.docx">
+                <el-button type="primary" :icon="Upload">选择并上传文件</el-button>
+              </el-upload>
             </div>
-            <el-upload :show-file-list="false" :http-request="handleUpload" accept=".txt,.md,.pdf,.docx">
-              <el-button type="primary" :icon="Upload">上传文件</el-button>
-            </el-upload>
-          </div>
 
-          <el-table v-loading="fileLoading" :data="files" border>
-            <el-table-column label="文件" min-width="250">
-              <template #default="{ row }">
-                <div class="ly-table-title">
-                  <strong>{{ row.fileName }}</strong>
-                  <div class="ly-inline-meta">
-                    <span>{{ row.fileType }}</span>
-                    <span>{{ formatFileSize(row.fileSize) }}</span>
-                  </div>
-                </div>
-              </template>
-            </el-table-column>
-            <el-table-column label="解析状态" width="120">
-              <template #default="{ row }">
-                <el-tag :type="parseStatusTag(row.parseStatus)">{{ parseStatusText(row.parseStatus) }}</el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column label="索引状态" width="120">
-              <template #default="{ row }">
-                <el-tag :type="parseStatusTag(row.indexStatus)">{{ indexStatusText(row.indexStatus) }}</el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column label="失败原因" min-width="180" show-overflow-tooltip>
-              <template #default="{ row }">{{ row.failureReason || "--" }}</template>
-            </el-table-column>
-            <el-table-column label="上传时间" width="180">
-              <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
-            </el-table-column>
-            <el-table-column label="操作" width="240" fixed="right">
-              <template #default="{ row }">
-                <el-button link type="primary" @click="openChunkDrawer(row)">切片</el-button>
-                <el-button link @click="handleParse(row)">解析</el-button>
-                <el-button link @click="handleIndex(row)">索引</el-button>
-                <el-button link type="danger" @click="handleDeleteFile(row)">删除</el-button>
-              </template>
-            </el-table-column>
-          </el-table>
+            <div class="knowledge-table-shell">
+              <el-table v-loading="fileLoading" :data="files" border>
+                <el-table-column label="文件" min-width="250">
+                  <template #default="{ row }">
+                    <div class="ly-table-title">
+                      <strong>{{ row.fileName }}</strong>
+                      <div class="ly-inline-meta">
+                        <span>{{ row.fileType }}</span>
+                        <span>{{ formatFileSize(row.fileSize) }}</span>
+                      </div>
+                    </div>
+                  </template>
+                </el-table-column>
+                <el-table-column label="解析状态" width="120">
+                  <template #default="{ row }">
+                    <el-tag :type="parseStatusTag(row.parseStatus)">{{ parseStatusText(row.parseStatus) }}</el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column label="索引状态" width="120">
+                  <template #default="{ row }">
+                    <el-tag :type="parseStatusTag(row.indexStatus)">{{ indexStatusText(row.indexStatus) }}</el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column label="失败原因" min-width="180" show-overflow-tooltip>
+                  <template #default="{ row }">{{ row.failureReason || "--" }}</template>
+                </el-table-column>
+                <el-table-column label="上传时间" width="180">
+                  <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+                </el-table-column>
+                <el-table-column label="操作" width="240" fixed="right">
+                  <template #default="{ row }">
+                    <el-button link type="primary" @click="openChunkDrawer(row)">切片</el-button>
+                    <el-button link @click="handleParse(row)">解析</el-button>
+                    <el-button link @click="handleIndex(row)">索引</el-button>
+                    <el-button link type="danger" @click="handleDeleteFile(row)">删除</el-button>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
+          </div>
         </template>
 
-        <el-empty v-else description="请选择知识库后再管理文档" />
+        <el-empty v-else description="先新建或选中一个知识库，再上传和管理文档" />
       </el-card>
     </div>
 
@@ -561,9 +561,49 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+.stats-shell {
+  border: 0;
+  border-radius: 28px;
+  background: rgba(255, 252, 248, 0.92);
+  box-shadow: 0 18px 36px rgba(71, 44, 25, 0.08);
+}
+
+:deep(.stats-shell .el-card__body) {
+  padding: 18px;
+}
+
+.ly-kpi-item {
+  min-width: 0;
+  padding: 22px 24px;
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 248, 240, 0.9));
+  border: 1px solid rgba(90, 56, 35, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.ly-kpi-item span {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  color: rgba(36, 25, 18, 0.62);
+  letter-spacing: 0.01em;
+}
+
+.ly-kpi-item strong {
+  display: block;
+  margin-top: 12px;
+  font-size: 40px;
+  line-height: 1;
+  color: #241912;
+}
+
 .knowledge-layout,
-.knowledge-filter-bar,
 .knowledge-form-grid {
+  display: grid;
+  gap: 18px;
+}
+
+.knowledge-workspace {
   display: grid;
   gap: 18px;
 }
@@ -577,13 +617,40 @@ onMounted(async () => {
   flex-wrap: wrap;
 }
 
+.knowledge-upload-tip {
+  display: grid;
+  gap: 6px;
+  color: #241912;
+}
+
+.knowledge-upload-tip strong {
+  font-size: 15px;
+}
+
+.knowledge-upload-tip span {
+  color: rgba(36, 25, 18, 0.64);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
 .knowledge-filter-bar {
+  display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  margin-bottom: 18px;
+  gap: 12px;
 }
 
 .knowledge-form-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.knowledge-table-shell {
+  overflow: hidden;
+  border-radius: 22px;
+  border: 1px solid rgba(90, 56, 35, 0.08);
+}
+
+.knowledge-table-shell :deep(.el-table) {
+  width: 100%;
 }
 
 .chunk-drawer-body {
@@ -600,6 +667,18 @@ onMounted(async () => {
 }
 
 @media (max-width: 860px) {
+  :deep(.stats-shell .el-card__body) {
+    padding: 14px;
+  }
+
+  .ly-kpi-item {
+    padding: 18px 20px;
+  }
+
+  .ly-kpi-item strong {
+    font-size: 32px;
+  }
+
   .knowledge-filter-bar,
   .knowledge-form-grid {
     grid-template-columns: 1fr;

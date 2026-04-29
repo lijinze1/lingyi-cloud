@@ -7,7 +7,8 @@ import ProductsView from "@/views/ProductsView.vue";
 import ProductDetailView from "@/views/ProductDetailView.vue";
 import ProfileView from "@/views/ProfileView.vue";
 import CartView from "@/views/CartView.vue";
-import SeckillOrderView from "@/views/SeckillOrderView.vue";
+import SeckillListView from "@/views/SeckillListView.vue";
+import SeckillDetailView from "@/views/SeckillDetailView.vue";
 import CheckoutView from "@/views/CheckoutView.vue";
 import OrderDetailView from "@/views/OrderDetailView.vue";
 
@@ -17,11 +18,12 @@ const routes = [
   { path: "/register", component: RegisterView, meta: { public: true, authPage: true } },
   { path: "/products", component: ProductsView },
   { path: "/products/:id", component: ProductDetailView },
+  { path: "/seckill", component: SeckillListView },
+  { path: "/seckill/:activityId/:activitySkuId", component: SeckillDetailView },
   { path: "/checkout", component: CheckoutView },
   { path: "/cart", component: CartView },
   { path: "/profile", component: ProfileView },
   { path: "/orders/:orderNo", component: OrderDetailView },
-  { path: "/seckill/:recordId", component: SeckillOrderView },
   { path: "/:pathMatch(.*)*", redirect: "/" }
 ];
 
